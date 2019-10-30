@@ -4,13 +4,15 @@ class NodeData:
         self.form = form
         self.length = length
         self.factor = factor
+        self.nleafs = None
 
     def __eq__(self, other):
+        # Equality is based off intrinsic data of the tree, not internal data,
+        # such as factor.
         return (
             self.label == other.label
             and self.form == other.form
             and self.length == other.length
-            and self.factor == other.factor
         )
 
 

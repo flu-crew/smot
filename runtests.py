@@ -2,10 +2,9 @@
 
 import src.parser as sp
 from src.classes import Node
-from src.algorithm import treemap, treefold, factorByLabel, sampleContext, getLeftmost
+from src.algorithm import treemap, treefold, factorByLabel, sampleContext, getLeftmost, distribute
 import parsec as psc
 import unittest
-
 
 class TestParsers(unittest.TestCase):
     def test_parens(self):
@@ -90,6 +89,9 @@ class TestParsers(unittest.TestCase):
             ),
         )
 
+
+class TestALgorithms(unittest.TestCase):
+
     def test_treemap(self):
         def _lower(x):
             if x.label:
@@ -170,6 +172,18 @@ class TestParsers(unittest.TestCase):
                 ]
             ),
         )
+
+    def test_distribute(self):
+        self.assertEqual(distribute(5, 3), [2,2,1])
+        self.assertEqual(distribute(3, 5), [1,1,1,0,0])
+        self.assertEqual(distribute(5, 1), [5])
+        self.assertEqual(distribute(0, 2), [0,0])
+        self.assertEqual(distribute(5, 0), [])
+        self.assertEqual(distribute(0, 0), [])
+        # with sizes vector
+        self.assertEqual(distribute(10, 3, [3,100,1]), [3, 6, 1])
+        self.assertEqual(distribute(10, 3, [3,100,0]), [3, 7, 0])
+        self.assertEqual(distribute(1, 2, [0,10]), [0, 1])
 
 
 if __name__ == "__main__":
