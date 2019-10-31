@@ -23,6 +23,8 @@ if __name__ == "__main__":
     from src.parser import p_newick
     import sys
 
+    sys.setrecursionlimit(10**8)
+
     if args["<filename>"]:
         with open(args["<filename>"], "r") as f: 
             rawtree = f.readlines()
