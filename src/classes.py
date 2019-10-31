@@ -1,10 +1,19 @@
+import re
+from Bio.Phylo.BaseTree import Clade
+
 class NodeData:
-    def __init__(self, label=None, form=None, length=None, factor=None):
+    def __init__(self, label=None, form=None, length=0, factor=None):
         self.label = label
         self.form = form
         self.length = length
         self.factor = factor
         self.nleafs = None
+        self.color = None
+
+    def _color(self):
+        m = re.match("&!color=(#\d{6})")
+        if m:
+            self.color = m.groups(1)
 
     def __eq__(self, other):
         # Equality is based off intrinsic data of the tree, not internal data,
@@ -23,6 +32,14 @@ class Node:
 
     def newick(self):
          return str(self) + ";"
+
+    def asBiopythonTree(self):
+        return Clade(
+            branch_length = self.data.length,
+            name = self.data.label,
+            color = self.data.color,
+            clades = [kid.asBiopythonTree() for kid in self.kids]
+        )
 
     def __eq__(self, other):
         return self.kids == other.kids and self.data == other.data

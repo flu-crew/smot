@@ -6,6 +6,7 @@ Do stuff to trees
 Usage:
     sap <filename>
     sap tips [<filename>]
+    sap plot [<filename>]
 """
 
 import signal
@@ -34,5 +35,10 @@ if __name__ == "__main__":
     rawtree = "".join(rawtree).strip()
 
     tree = p_newick.parse(rawtree)
-        
-    print(tree.newick())
+
+    if args["plot"]:
+        from Bio import Phylo
+        btree = tree.asBiopythonTree()
+        Phylo.draw(btree)
+    else:
+        print(tree.newick())
