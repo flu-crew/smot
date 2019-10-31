@@ -90,8 +90,23 @@ class TestParsers(unittest.TestCase):
         )
 
 
-class TestALgorithms(unittest.TestCase):
+class TestStringify(unittest.TestCase):
+    def test_stringify(self):
+        s = "(B|a,(A|b,C|b,E|b),D|c);"
+        self.assertEqual(sp.p_newick.parse(s).newick(), s)
 
+    def test_string_complex(self):
+        s = """("that's cool"[&!color=#000000]:0.3);"""
+        self.assertEqual(sp.p_newick.parse(s).newick(), s)
+
+        s = """(A:3);"""
+        self.assertEqual(sp.p_newick.parse(s).newick(), s)
+
+        s = """('that"s !@#$%^&)(*&^[]cool'[&!color=#000000]:0.3);"""
+        self.assertEqual(sp.p_newick.parse(s).newick(), s)
+
+
+class TestALgorithms(unittest.TestCase):
     def test_treemap(self):
         def _lower(x):
             if x.label:

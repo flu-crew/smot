@@ -21,6 +21,9 @@ class Node:
         self.kids = kids
         self.data = NodeData(**kwargs)
 
+    def newick(self):
+         return str(self) + ";"
+
     def __eq__(self, other):
         return self.kids == other.kids and self.data == other.data
 
@@ -30,11 +33,24 @@ class Node:
         else:
             s = ""
         if self.data.label:
-            s += self.data.label
+            if set("^,:;()[]'\"").intersection(set(self.data.label)):
+                if "'" in self.data.label:
+                    if '"' in self.data.label:
+                        label = re.sub('"', '\\"', self.data.label) 
+                        s += f'"{label}"'
+                    else:
+                        s += f'"{self.data.label}"'
+                elif '"' in self.data.label:
+                    s += f"'{self.data.label}'"
+            else:
+                s += self.data.label
         if self.data.form:
-            s += "[" + self.data.label + "]"
+            s += "[" + self.data.form + "]"
         if self.data.length:
-            s += ":" + self.data.length
+            if (self.data.length - int(self.data.length)) == 0:
+                s += ":" + str(int(self.data.length))
+            else:
+                s += ":" + str(self.data.length)
         return s
 
     def __repr__(self):
