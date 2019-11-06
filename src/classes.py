@@ -2,13 +2,10 @@ import re
 from Bio.Phylo.BaseTree import Clade
 
 class NodeData:
-    def __init__(self, label=None, form=None, length=0, factor=None, isLeaf=False):
+    def __init__(self, label=None, form=None, length=None, factor=None, isLeaf=False):
         self.label = label
         self.form = form
-        if not length:
-            self.length = 0 
-        else:
-            self.length = length
+        self.length = length
         self.factor = factor
         self.nleafs = None
         self.color = None
@@ -67,13 +64,11 @@ class Node:
                 s += self.data.label
         if self.data.form:
             s += "[" + self.data.form + "]"
-        if self.data.length:
+        if self.data.length is not None:
             if (self.data.length - int(self.data.length)) == 0:
                 s += ":" + str(int(self.data.length))
             else:
                 s += ":" + str(self.data.length)
-        else:
-            s += ":0"
         return s
 
     def __repr__(self):

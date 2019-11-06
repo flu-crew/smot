@@ -4,12 +4,16 @@
 Do stuff to trees
 
 Usage:
-    sap tips [<filename>]
-    sap plot [<filename>]
-    sap sample-equal [--keep=<keep>] [--factor-by-field=<factorByField>] [--factor-by-capture=<capture>] [--max-tips=<tips>] [<filename>]
-    sap tipsed <pattern> <replacement> [<filename>]
+    sap tips [--format=<format>] [<filename>]
+    sap plot [--format=<format>] [<filename>]
+    sap sample-equal [--format=<format>] [--keep=<keep>] [--factor-by-field=<factorByField>] [--factor-by-capture=<capture>] [--max-tips=<tips>] [--zero] [<filename>]
+    sap tipsed [--format=<format>] <pattern> <replacement> [<filename>]
+    sap midpoint [--format=<format>] [<filename>]
+    sap random [--format=<format>] [<tipnames>]
 
 Options
+    --zero                    Set branches without lengths to 0  
+    -f --format STR           Tree format (newick or nexus)
     -k --keep LIST            Factors to keep
     -m --max-tips INT         Maximum number of tips to keep per unkept factor
     --factor-by-field INT     Factor by field index (with '|' delimiters, for now)
@@ -34,20 +38,43 @@ if __name__ == "__main__":
 
     sys.setrecursionlimit(10**8)
 
-    if args["<filename>"]:
-        with open(args["<filename>"], "r") as f: 
-            rawtree = f.readlines()
+    if args["--format"]:
+        format = args["--format"]
     else:
-        rawtree = sys.stdin.readlines()
+        format = "newick"
 
+    if args["random"]:
+        from Bio import Phylo
+        if args["<tipnames>"]:
+            with open(tipfile, "r") as f:
+                names = [name.strip() for name in f.readlines()]
+        else:
+            names = [name.strip() for name in sys.stdin]
+        btree = Phylo.BaseTree.Tree.randomized(names)
+        Phylo.write(btree, file=sys.stdout, format="newick")
+        sys.exit(0)
+
+    if args["<filename>"]:
+        f = open(args["<filename>"], "r")
+    else:
+        f = sys.stdin
+
+    if args["midpoint"]:
+        from Bio import Phylo
+        tree = list(Phylo.parse(f, format=format))[0]
+        tree.root_at_midpoint()
+        Phylo.write(tree.clade, file=sys.stdout, format="newick")
+        sys.exit(0)
+    elif args["plot"]:
+        from Bio import Phylo
+        btree = list(Phylo.parse(f, format=format))[0]
+        Phylo.draw(btree)
+        sys.exit(0)
+
+    rawtree = f.readlines()
     rawtree = "".join(rawtree).strip()
-
     tree = p_newick.parse(rawtree)
 
-    if args["plot"]:
-        from Bio import Phylo
-        btree = tree.asBiopythonTree()
-        Phylo.draw(btree)
     if args["tipsed"]:
         import re
         pat = re.compile(args["<pattern>"])

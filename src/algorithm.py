@@ -71,7 +71,8 @@ def sampleN(node, n):
     selection = distribute(n, len(node.kids), [kid.nleafs for kid in node.kids])
     node.kids = [sampleN(kid, m) for kid,m in zip(node.kids, selection) if m > 0]
     if len(node.kids) == 1:
-        node.kids[0].data.length += node.data.length
+        if node.kids[0].data.length is not None and node.data.length is not None:
+            node.kids[0].data.length += node.data.length
         node = node.kids[0]
     return node
 
