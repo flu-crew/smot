@@ -2,13 +2,17 @@ import re
 from Bio.Phylo.BaseTree import Clade
 
 class NodeData:
-    def __init__(self, label=None, form=None, length=0, factor=None):
+    def __init__(self, label=None, form=None, length=0, factor=None, isLeaf=False):
         self.label = label
         self.form = form
-        self.length = length
+        if not length:
+            self.length = 0 
+        else:
+            self.length = length
         self.factor = factor
         self.nleafs = None
         self.color = None
+        self.isLeaf = isLeaf
 
     def _color(self):
         m = re.match("&!color=(#\d{6})")
@@ -24,11 +28,11 @@ class NodeData:
             and self.length == other.length
         )
 
-
 class Node:
-    def __init__(self, kids=[], **kwargs):
+    def __init__(self, kids=[], nleafs = None, **kwargs):
         self.kids = kids
-        self.data = NodeData(**kwargs)
+        self.data = NodeData(**kwargs, isLeaf = not bool(kids))
+        self.nleafs = nleafs
 
     def newick(self):
          return str(self) + ";"
@@ -68,6 +72,8 @@ class Node:
                 s += ":" + str(int(self.data.length))
             else:
                 s += ":" + str(self.data.length)
+        else:
+            s += ":0"
         return s
 
     def __repr__(self):

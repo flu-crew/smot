@@ -1,5 +1,6 @@
 from src.classes import Node
 from collections import Counter
+import sys
 
 """
 Map a function over the data (label, format, and branch length) of each node in
@@ -40,9 +41,9 @@ def factorByLabel(node, fun, **kwargs):
         return ndata
     return treemap(node, mapfun, **kwargs)
 
-def countFactors(node):
+def countFactors(node, includeNodes=False):
     def fun_(b, x):
-        if x.factor:
+        if x.factor and (x.isLeaf or includeNodes):
             b.append(x.factor)
         return b
     factors = treefold(node, fun_, [])
@@ -59,20 +60,20 @@ def getLeftmost(node):
         return node
 
 
-def chooseN(node, n): 
-    if n == 0:
-        return None
+def sampleN(node, n):
     if not node.nleafs:
         node = setNLeafs(node)
-    if not node.kids:
-        if n == 1:
-            return node
-        else:
-            raise "Bug in chooseN"
-    else:
-        N = sum([kid.nleafs for kid in node.kids])
-        selection = distribute(N, len(kid.nleafs), [kid.nleafs for kid in node.kids])
-        node.kids = [chooseN(kid, m) for kid,m in zip(node.kids, selection) if m > 0]
+    if n == 0:
+        raise "Cannot create empty leaf"
+    if not node.kids and not n == 1:
+        raise "Bug in sampleN"
+    N = sum([kid.nleafs for kid in node.kids])
+    selection = distribute(n, len(node.kids), [kid.nleafs for kid in node.kids])
+    node.kids = [sampleN(kid, m) for kid,m in zip(node.kids, selection) if m > 0]
+    if len(node.kids) == 1:
+        node.kids[0].data.length += node.data.length
+        node = node.kids[0]
+    return node
 
 def distribute(count, groups, sizes=None):
     """
@@ -135,7 +136,7 @@ def sampleContext(node, keep=[], maxTips=5):
             if list(factorCount.keys())[0] in keep:
                 newkids.append(kid)
             else:
-                newkids.append(getLeftmost(kid))
+                newkids.append(sampleN(kid, maxTips))
         else:
             newkids.append(sampleContext(kid, keep=keep, maxTips=maxTips))
     node.kids = newkids

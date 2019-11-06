@@ -2,7 +2,7 @@
 
 import src.parser as sp
 from src.classes import Node
-from src.algorithm import treemap, treefold, factorByLabel, sampleContext, getLeftmost, distribute
+from src.algorithm import treemap, treefold, factorByLabel, sampleContext, getLeftmost, distribute, sampleN
 import parsec as psc
 import unittest
 
@@ -22,8 +22,15 @@ class TestParsers(unittest.TestCase):
 
     def test_number(self):
         self.assertEqual(sp.p_number.parse("12341"), 12341)
+        self.assertEqual(sp.p_number.parse("-12341"), -12341)
         self.assertEqual(sp.p_number.parse("123.41"), 123.41)
         self.assertEqual(sp.p_number.parse("0.41"), 0.41)
+        self.assertEqual(sp.p_number.parse("-0.41"), -0.41)
+        self.assertEqual(sp.p_number.parse("1.211E2"), 121.1)
+        self.assertEqual(sp.p_number.parse("1.211e2"), 121.1)
+        self.assertEqual(sp.p_number.parse("1.21e-2"), 0.0121)
+        self.assertEqual(sp.p_number.parse("1.21E-2"), 0.0121)
+        self.assertEqual(sp.p_number.parse("-1.21E-2"), -0.0121)
 
     def test_label(self):
         self.assertEqual(sp.p_label.parse("'12341'"), "12341")
@@ -178,11 +185,27 @@ class TestALgorithms(unittest.TestCase):
                 return None
 
         self.assertEqual(
-            sampleContext(factorByLabel(sp.p_newick.parse("(B|a,(A|b,C|b,E|b),D|c);"), _fun), keep=[], maxTips=2),
+            sampleContext(factorByLabel(sp.p_newick.parse("(B|a,(A|b,C|b,E|b),D|c);"), _fun), keep=[], maxTips=1),
             sp.Node(
                 kids=[
                     sp.Node(label="B|a", factor="a"),
                     sp.Node(label="A|b", factor="b"),
+                    sp.Node(label="D|c", factor="c"),
+                ]
+            ),
+        )
+
+        self.assertEqual(
+            sampleContext(factorByLabel(sp.p_newick.parse("(B|a,(A|b,C|b,E|b),D|c);"), _fun), keep=[], maxTips=2),
+            sp.Node(
+                kids=[
+                    sp.Node(label="B|a", factor="a"),
+                    sp.Node(
+                        kids=[
+                            sp.Node(label="A|b", factor="b"),
+                            sp.Node(label="C|b", factor="b")
+                        ]
+                    ),
                     sp.Node(label="D|c", factor="c"),
                 ]
             ),
@@ -199,6 +222,9 @@ class TestALgorithms(unittest.TestCase):
         self.assertEqual(distribute(10, 3, [3,100,1]), [3, 6, 1])
         self.assertEqual(distribute(10, 3, [3,100,0]), [3, 7, 0])
         self.assertEqual(distribute(1, 2, [0,10]), [0, 1])
+
+    def test_sampleN(self):
+        self.assertEqual(str(sampleN(sp.p_newick.parse("(B,(A,C,E),D);"), 2)), "(B,A)")
 
 
 if __name__ == "__main__":
