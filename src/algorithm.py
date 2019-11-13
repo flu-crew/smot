@@ -1,6 +1,8 @@
 from src.classes import Node
 from collections import Counter
 import sys
+import math
+import random
 
 """
 Map a function over the data (label, format, and branch length) of each node in
@@ -31,6 +33,28 @@ def treecut(node, fun, **kwargs):
     node.kids = [treecut(kid, fun, **kwargs) for kid in node.kids]
     return node
 
+def clean(node):
+    """
+    Remove nodes that have only one child. Add the branch lengths.
+    """
+    if len(node.kids) == 1:
+        if node.data.length is not None and node.kids[0].data.length is not None:
+            node.kids[0].data.length += node.data.length
+        node = node.kids[0]
+    newkids = []
+
+    for kid in node.kids:
+        if len(kid.kids) == 1:
+            if kid.data.length is not None and kid.kids[0].data.length is not None:
+                kid.kids[0].data.length += kid.data.length
+            kid = kid.kids[0]
+        # keep the kid if it is either a node with kids or a leaf (but drop any
+        # childless nodes)
+        kid = clean(kid)
+        if len(kid.kids) > 0 or kid.data.isLeaf:
+            newkids.append(kid)
+    node.kids = newkids
+    return node
 
 """
 Assign factors to nodes based on the node label string
@@ -59,12 +83,13 @@ def getLeftmost(node):
     else:
         return node
 
-
 def sampleN(node, n):
     if not node.nleafs:
         node = setNLeafs(node)
     if n == 0:
         raise "Cannot create empty leaf"
+    elif (n > node.nleafs):
+        return node
     if not node.kids and not n == 1:
         raise "Bug in sampleN"
     N = sum([kid.nleafs for kid in node.kids])
@@ -75,6 +100,37 @@ def sampleN(node, n):
             node.kids[0].data.length += node.data.length
         node = node.kids[0]
     return node
+
+def sampleRandom(node, n, seed=None):
+    """
+    Sample N random tips from node 
+    """
+    if not node.nleafs:
+        node = setNLeafs(node)
+    if n == 0:
+        raise "Cannot create empty leaf"
+    elif (n > node.nleafs):
+        return node
+    if not node.kids and not n == 1:
+        raise "Bug in sampleN"
+
+    def _collect(b, d):
+        if d.isLeaf:
+            b.add(d.label)
+        return b
+    labels = treefold(node, _collect, set())
+
+    rng = random.Random(seed)
+    keep = rng.sample(labels, n)
+
+    def _cull(node):
+        chosenOnes = [kid for kid in node.kids
+                     if (not kid.data.isLeaf) or kid.data.label in keep]
+        return chosenOnes
+    sampledTree = treecut(node, _cull)
+    sampledTree = clean(sampledTree)
+    sampledTree = setNLeafs(sampledTree)
+    return sampledTree
 
 def distribute(count, groups, sizes=None):
     """
@@ -140,5 +196,30 @@ def sampleContext(node, keep=[], maxTips=5):
                 newkids.append(sampleN(kid, maxTips))
         else:
             newkids.append(sampleContext(kid, keep=keep, maxTips=maxTips))
+    node.kids = newkids
+    return node
+
+def sampleProportional(node, proportion=0.5, keep=[], minTips=3):
+    if not (0 <= proportion <= 1): 
+        print("Expected parameter 'proportion' to be a number between 0 and 1", file=sys.stderr)
+        sys.exit(1)
+    if not (0 <= minTips and minTips % 1 == 0):
+        print("Expected parameter 'minTips' to be a positive integer")
+        sys.exit(1)
+    node = setNLeafs(node)
+    return _sampleProportional(node=node, proportion=proportion, keep=keep, minTips=minTips)
+
+def _sampleProportional(node, proportion=0.5, keep=[], minTips=3):
+    newkids = []
+    for kid in node.kids:
+        factorCount = countFactors(kid)
+        if len(factorCount) == 1:
+            if list(factorCount.keys())[0] in keep:
+                newkids.append(kid)
+            else:
+                N = max(minTips, math.floor(kid.nleafs * proportion))
+                newkids.append(sampleRandom(kid, N))
+        else:
+            newkids.append(_sampleProportional(kid, proportion=proportion, keep=keep, minTips=minTips))
     node.kids = newkids
     return node

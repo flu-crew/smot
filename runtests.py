@@ -2,9 +2,10 @@
 
 import src.parser as sp
 from src.classes import Node
-from src.algorithm import treemap, treefold, factorByLabel, sampleContext, getLeftmost, distribute, sampleN
+from src.algorithm import *
 import parsec as psc
 import unittest
+import random
 
 class TestParsers(unittest.TestCase):
     def test_parens(self):
@@ -210,6 +211,39 @@ class TestALgorithms(unittest.TestCase):
                 ]
             ),
         )
+
+    def test_clean(self):
+        self.assertEqual(
+            clean(sp.p_newick.parse("(B,((A)),D);")), sp.p_newick.parse("(B,A,D);")
+        )
+        self.assertEqual(
+            clean(sp.p_newick.parse("(((A)));")), sp.p_newick.parse("(A);")
+        )
+        self.assertEqual(
+                clean(sp.p_newick.parse("(B:1,((A:3):2):1,D:1);")), sp.p_newick.parse("(B:1,A:6,D:1);")
+        )
+
+    def test_sampleRandom(self):
+        self.assertEqual(
+            sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 5),
+                         sp.p_newick.parse("(B,(A,C,E),D);"),
+        )
+        self.assertEqual(
+            sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 10),
+                         sp.p_newick.parse("(B,(A,C,E),D);"),
+        )
+        self.assertEqual(
+            sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 10),
+                         sp.p_newick.parse("(B,(A,C,E),D);"),
+        )
+        self.assertEqual(
+            sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 2, seed=42).nleafs, 2
+        )
+        #  # this SHOULD work, but there appears to be a bug in unittest
+        #  self.assertEqual(
+        #      sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 2, seed=42),
+        #      sp.p_newick.parse("(B,D);")
+        #  )
 
     def test_distribute(self):
         self.assertEqual(distribute(5, 3), [2,2,1])

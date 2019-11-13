@@ -6,7 +6,17 @@ Do stuff to trees
 Usage:
     sap tips [--format=<format>] [<filename>]
     sap plot [--format=<format>] [<filename>]
-    sap sample-equal [--format=<format>] [--keep=<keep>] [--factor-by-field=<factorByField>] [--factor-by-capture=<capture>] [--max-tips=<tips>] [--zero] [<filename>]
+    sap sample-equal [--format=<format>]
+                     [--factor-by-field=<factorByField>]
+                     [--factor-by-capture=<capture>]
+                     [--factor-by-table=<tablefile>]
+                     [--keep=<keep>] [--max-tips=<tips>] [--zero] [<filename>]
+    sap sample-proportional [--format=<format>]
+                            [--factor-by-field=<factorByField>]
+                            [--factor-by-capture=<capture>]
+                            [--factor-by-table=<tablefile>]
+                            [--proportion=<proportion>] [--keep=<keep>]
+                            [--min-tips=<tips>] [--zero] [<filename>]
     sap tipsed [--format=<format>] <pattern> <replacement> [<filename>]
     sap midpoint [--format=<format>] [<filename>]
     sap random [--format=<format>] [<tipnames>]
@@ -18,11 +28,76 @@ Options
     -m --max-tips INT         Maximum number of tips to keep per unkept factor
     --factor-by-field INT     Factor by field index (with '|' delimiters, for now)
     --factor-by-capture REGEX A regular expression with a capture for determining factors from labels
+    -p --proportion NUM       The proportion of tips in a clade to keep
 """
 
 import signal
 import os
 from docopt import docopt
+
+def factorTree(tree, args):
+    if args["--factor-by-field"]:
+        def _fun(name):
+            try:
+                return name.split("|")[int(args["--factor-by-field"])+1]
+            except:
+                return None
+        tree = factorByLabel(tree, _fun)
+    elif args["--factor-by-capture"]:
+        import re
+        pat = re.compile(args["--factor-by-capture"])
+        def _fun(name):
+            if name:
+                m = re.search(pat, name)
+                if m:
+                    if m.groups(1):
+                        if isinstance(m.groups(1), str):
+                            return m.groups(1)
+                        else:
+                            return m.groups(1)[0]
+                    else:
+                        return m.groups(0)
+            return "Other"
+        tree = factorByLabel(tree, _fun)
+    elif args["--factor-by-table"]:
+        with open(args["--factor-by-table"], "r") as f:
+            factorMap = dict()
+            for line in f.readlines():
+                try:
+                    (k,v) = line.strip().split("\t")
+                    factorMap[k] = v
+                except ValueError:
+                    print("Expected two columns in --factor-by-table file", file=sys.stderr)
+                    sys.exit(1)
+            def _fun(name):
+                if name:
+                    for k,v in factorMap.items():
+                        if k in name:
+                            return v
+                return "Other"
+            tree = factorByLabel(tree, _fun)
+    return tree
+
+def cast(args, field, default, lbnd=None, rbnd=None, caster=None, typename=None):
+    """
+    Cast a field from the command line argument list.
+    """
+    if args[field]:
+        if caster:
+            try:
+                x = caster(args[field])
+                if lbnd and x < lbnd:
+                    print(f"Expected {field} to be greater than or equal to {lbnd}")
+                if rbnd and x > rbnd:
+                    print(f"Expected {field} to be less than or equal to {rbnd}")
+            except ValueError:
+                print(f"Expected argument {field} to be a {typename}")
+                sys.exit(1)
+        else:
+            x = args[field]
+    else:
+        x = default
+    return x
 
 if __name__ == "__main__":
 
@@ -38,10 +113,7 @@ if __name__ == "__main__":
 
     sys.setrecursionlimit(10**8)
 
-    if args["--format"]:
-        format = args["--format"]
-    else:
-        format = "newick"
+    format = cast(args, "--format", "newick")
 
     if args["random"]:
         from Bio import Phylo
@@ -92,39 +164,16 @@ if __name__ == "__main__":
             return b
         for tip in treefold(tree, _fun, []):
             print(tip)
-    elif args["sample-equal"]:
-        if args["--factor-by-field"]:
-            def _fun(name):
-                try:
-                    return name.split("|")[int(args["--factor-by-field"])+1]
-                except:
-                    return None
-            tree = factorByLabel(tree, _fun)
-        elif args["--factor-by-capture"]:
-            import re
-            pat = re.compile(args["--factor-by-capture"])
-            def _fun(name):
-                if name:
-                    m = re.search(pat, name)
-                    if m:
-                        if m.groups(1):
-                            return m.groups(1)
-                        else:
-                            return m.groups(0)
-                return "Other"
-            tree = factorByLabel(tree, _fun)
-        if args["--max-tips"]:
-            try:
-                maxTips = int(args["--max-tips"])
-            except:
-                print("Expected argument --max-tips to be a positive integer")
-        else:
-            maxTips = 5
-        if args["--keep"]:
-            keep = [args["--keep"]]
-        else:
-            keep = []
-        tree = sampleContext(tree, keep=keep, maxTips=maxTips)
+    elif args["sample-equal"] or args["sample-proportional"]:
+        tree = factorTree(tree, args)
+        keep = cast(args, "--keep", [])
+        minTips = cast(args, "--min-tips", 3, caster=int, typename="int", lbnd=0)
+        maxTips = cast(args, "--max-tips", 5, caster=int, typename="int", lbnd=0)
+        proportion = cast(args, "--proportion", 0.5, caster=float, typename="float", lbnd=0, rbnd=1)
+        if args["sample-equal"]:
+            tree = sampleContext(tree, keep=keep, maxTips=maxTips)
+        elif args["sample-proportional"]:
+            tree = sampleProportional(tree, keep=keep, proportion=proportion, minTips=minTips)
         print(tree.newick())
     else:
         print(tree.newick())
