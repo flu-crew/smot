@@ -4,22 +4,22 @@
 Do stuff to trees
 
 Usage:
-    sap tips [--format=<format>] [<filename>]
-    sap plot [--format=<format>] [<filename>]
-    sap sample-equal [--format=<format>]
+    jon tips [--format=<format>] [<filename>]
+    jon plot [--format=<format>] [<filename>]
+    jon sample-equal [--format=<format>]
                      [--factor-by-field=<factorByField>]
                      [--factor-by-capture=<capture>]
                      [--factor-by-table=<tablefile>]
                      [--keep=<keep>] [--max-tips=<tips>] [--zero] [<filename>]
-    sap sample-proportional [--format=<format>]
+    jon sample-proportional [--format=<format>]
                             [--factor-by-field=<factorByField>]
                             [--factor-by-capture=<capture>]
                             [--factor-by-table=<tablefile>]
                             [--proportion=<proportion>] [--keep=<keep>]
                             [--min-tips=<tips>] [--zero] [<filename>]
-    sap tipsed [--format=<format>] <pattern> <replacement> [<filename>]
-    sap midpoint [--format=<format>] [<filename>]
-    sap random [--format=<format>] [<tipnames>]
+    jon tipsed [--format=<format>] <pattern> <replacement> [<filename>]
+    jon midpoint [--format=<format>] [<filename>]
+    jon random [--format=<format>] [<tipnames>]
 
 Options
     --zero                    Set branches without lengths to 0  
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     if os.name is "posix":
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
-    args = docopt(__doc__, version ="sap 0.1.0")
+    args = docopt(__doc__, version ="jon 0.1.0")
 
     from src.classes import Node
     from src.parser import p_newick
