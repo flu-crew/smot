@@ -14,7 +14,9 @@ def p_tuple(parser):
     return p_parens(p.sepBy1(parser, p.string(",")))
 
 
-p_number = (p.regex("-?\d\.?\d*[eE]-?\d+") ^ p.regex("-?\d+\.\d+") ^ p.regex("-?\d+")).parsecmap(float)
+p_number = (
+    p.regex("-?\d\.?\d*[eE]-?\d+") ^ p.regex("-?\d+\.\d+") ^ p.regex("-?\d+")
+).parsecmap(float)
 p_label = (
     (p.string("'") >> p.regex("[^']+") << p.string("'"))
     ^ (p.string('"') >> p.regex('[^"]+') << p.string('"'))

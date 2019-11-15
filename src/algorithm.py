@@ -1,115 +1,124 @@
 from src.classes import Node
-from collections import Counter
+from src.util import log, die
+from collections import Counter, defaultdict
 import sys
 import math
 import random
 
-"""
-Map a function over the data (label, format, and branch length) of each node in
-the tree. The function is guaranteed to never alter the topology of the tree.
 
-fun :: NodeData -> NodeData
-"""
 def treemap(node, fun, **kwargs):
+    """
+    Map a function over the data (label, format, and branch length) of each node in
+    the tree. The function is guaranteed to never alter the topology of the tree.
+
+    fun :: NodeData -> NodeData
+    """
     node.data = fun(node.data, **kwargs)
     node.kids = [treemap(k, fun, **kwargs) for k in node.kids]
     return node
 
 
-"""
-fun :: a -> NodeData -> a
-"""
 def treefold(node, fun, init, **kwargs):
+    """
+    fun :: a -> NodeData -> a
+    """
     x = fun(init, node.data, **kwargs)
     for kid in node.kids:
         x = treefold(kid, fun, x, **kwargs)
     return x
 
-"""
-fun :: Node -> Node
-"""
+
 def treecut(node, fun, **kwargs):
+    """
+    fun :: Node -> Node
+    """
     node.kids = fun(node, **kwargs)
     node.kids = [treecut(kid, fun, **kwargs) for kid in node.kids]
     return node
 
-def clean(node):
+
+def clean(tree, isRoot=True):
     """
     Remove nodes that have only one child. Add the branch lengths.
     """
-    if len(node.kids) == 1:
-        if node.data.length is not None and node.kids[0].data.length is not None:
-            node.kids[0].data.length += node.data.length
-        node = node.kids[0]
-    newkids = []
 
-    for kid in node.kids:
-        if len(kid.kids) == 1:
-            if kid.data.length is not None and kid.kids[0].data.length is not None:
-                kid.kids[0].data.length += kid.data.length
-            kid = kid.kids[0]
-        # keep the kid if it is either a node with kids or a leaf (but drop any
-        # childless nodes)
-        kid = clean(kid)
-        if len(kid.kids) > 0 or kid.data.isLeaf:
-            newkids.append(kid)
-    node.kids = newkids
-    return node
+    def _clean(node, isRoot):
+        # remove empty children
+        node.kids = [kid for kid in node.kids if kid.data.nleafs > 0]
+        # remove all single-child nodes
+        while len(node.kids) == 1:
+            if node.data.length is not None and node.kids[0].data.length is not None:
+                node.kids[0].data.length += node.data.length
+            node = node.kids[0]
+            # remove empty children
+            node.kids = [kid for kid in node.kids if kid.data.nleafs > 0]
+        # clean all children
+        newkids = []
+        for kid in node.kids:
+            kid = _clean(kid, False)
+            if kid.data.isLeaf or kid.kids:
+                newkids.append(kid)
+        node.kids = newkids
+        # if `tree` is the entire tree and if the tree contains only one leaf, then
+        # we need to insert a root node
+        if node.data.isLeaf and isRoot:
+            node = Node(kids=[node])
+        return node
 
-"""
-Assign factors to nodes based on the node label string
-"""
+    tree = setNLeafs(tree)
+    return _clean(tree, isRoot)
+
+
 def factorByLabel(node, fun, **kwargs):
+    """
+    Assign factors to nodes based on the node label string
+    """
+
     def mapfun(ndata, **kwargs):
         ndata.factor = fun(ndata.label, **kwargs)
         return ndata
+
     return treemap(node, mapfun, **kwargs)
 
-def countFactors(node, includeNodes=False):
-    def fun_(b, x):
-        if x.factor and (x.isLeaf or includeNodes):
-            b.append(x.factor)
-        return b
-    factors = treefold(node, fun_, [])
-    return Counter(factors)
 
-
-"""
-Recurse down a tree, returning the leftmost leaf
-"""
 def getLeftmost(node):
+    """
+    Recurse down a tree, returning the leftmost leaf
+    """
     if node.kids:
         return getLeftmost(node.kids[0])
     else:
         return node
 
+
 def sampleN(node, n):
-    if not node.nleafs:
+    if not node.data.nleafs:
         node = setNLeafs(node)
     if n == 0:
         raise "Cannot create empty leaf"
-    elif (n > node.nleafs):
+    elif n > node.data.nleafs:
         return node
     if not node.kids and not n == 1:
         raise "Bug in sampleN"
-    N = sum([kid.nleafs for kid in node.kids])
-    selection = distribute(n, len(node.kids), [kid.nleafs for kid in node.kids])
-    node.kids = [sampleN(kid, m) for kid,m in zip(node.kids, selection) if m > 0]
+    N = sum([kid.data.nleafs for kid in node.kids])
+    selection = distribute(n, len(node.kids), [kid.data.nleafs for kid in node.kids])
+    node.kids = [sampleN(kid, m) for kid, m in zip(node.kids, selection) if m > 0]
     if len(node.kids) == 1:
         if node.kids[0].data.length is not None and node.data.length is not None:
             node.kids[0].data.length += node.data.length
         node = node.kids[0]
     return node
 
+
 def sampleRandom(node, n, seed=None):
     """
     Sample N random tips from node 
     """
-    if not node.nleafs:
+    if not node.data.nleafs:
         node = setNLeafs(node)
     if n == 0:
         raise "Cannot create empty leaf"
-    elif (n > node.nleafs):
+    elif n > node.data.nleafs:
         return node
     if not node.kids and not n == 1:
         raise "Bug in sampleN"
@@ -118,19 +127,23 @@ def sampleRandom(node, n, seed=None):
         if d.isLeaf:
             b.add(d.label)
         return b
+
     labels = treefold(node, _collect, set())
 
     rng = random.Random(seed)
     keep = rng.sample(labels, n)
 
     def _cull(node):
-        chosenOnes = [kid for kid in node.kids
-                     if (not kid.data.isLeaf) or kid.data.label in keep]
+        chosenOnes = [
+            kid for kid in node.kids if (not kid.data.isLeaf) or kid.data.label in keep
+        ]
         return chosenOnes
+
     sampledTree = treecut(node, _cull)
-    sampledTree = clean(sampledTree)
     sampledTree = setNLeafs(sampledTree)
+    sampledTree = clean(sampledTree)
     return sampledTree
+
 
 def distribute(count, groups, sizes=None):
     """
@@ -156,7 +169,7 @@ def distribute(count, groups, sizes=None):
         sizes = [count] * groups
 
     unfilledGroups = sum(s > 0 for s in sizes)
-    
+
     if count <= unfilledGroups:
         selection = []
         for i in range(groups):
@@ -173,53 +186,189 @@ def distribute(count, groups, sizes=None):
         remaining = count - sum(selection)
         if remaining > 0 and any(s > 0 for s in sizes):
             remaining_selection = distribute(remaining, groups, sizes)
-            selection = [s1 + s2 for s1,s2 in zip(selection, remaining_selection)]
+            selection = [s1 + s2 for s1, s2 in zip(selection, remaining_selection)]
     return selection
 
+
 def setNLeafs(node):
-    if not node.kids:
-        node.nleafs = 1
+    if node.data.isLeaf:
+        node.data.nleafs = 1
     else:
-        node.kids = [setNLeafs(kid) for kid in node.kids] 
-        node.nleafs = sum(kid.nleafs for kid in node.kids)
+        node.kids = [setNLeafs(kid) for kid in node.kids]
+        node.data.nleafs = sum(kid.data.nleafs for kid in node.kids)
     return node
 
 
-def sampleContext(node, keep=[], maxTips=5):
-    newkids = []
-    for kid in node.kids:
-        factorCount = countFactors(kid)
-        if len(factorCount) == 1 and list(factorCount.values())[0] >= maxTips:
-            if list(factorCount.keys())[0] in keep:
-                newkids.append(kid)
-            else:
-                newkids.append(sampleN(kid, maxTips))
+def setFactorCounts(node):
+    if node.data.isLeaf:
+        if node.data.factor:
+            node.data.factorCount = Counter([node.data.factor])
         else:
-            newkids.append(sampleContext(kid, keep=keep, maxTips=maxTips))
-    node.kids = newkids
+            node.data.factorCount = Counter()
+    else:
+        node.data.factorCount = Counter()
+        node.kids = [setFactorCounts(kid) for kid in node.kids]
+        node.data.factorCounts = Counter()
+        for kid in node.kids:
+            node.data.factorCount += kid.data.factorCount
+
     return node
 
-def sampleProportional(node, proportion=0.5, keep=[], minTips=3):
-    if not (0 <= proportion <= 1): 
-        print("Expected parameter 'proportion' to be a number between 0 and 1", file=sys.stderr)
-        sys.exit(1)
+
+def sampleContext(tree, keep=[], maxTips=5):
+    # recursive sampler
+    def _sampleContext(node):
+        newkids = []
+        for kid in node.kids:
+            if (
+                len(kid.data.factorCount) == 1
+                and list(kid.data.factorCount.values())[0] >= maxTips
+            ):
+                if list(kid.data.factorCount.keys())[0] in keep:
+                    newkids.append(kid)
+                else:
+                    newkids.append(sampleN(kid, maxTips))
+            else:
+                newkids.append(_sampleContext(kid))
+        node.kids = newkids
+        return node
+
+    tree = setNLeafs(tree)
+    tree = setFactorCounts(tree)
+    return clean(_sampleContext(tree))
+
+
+def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
+
+    rng = random.Random(seed)
+
+    def isMonophyletic(node):
+        """
+        Check is a branch is monophyletic relative to the defined factors. Assumes
+        that `setFactorCounts` has been called on the tree.
+        """
+        return len(node.data.factorCount) <= 1
+
+    def getFactor(node):
+        if node.data.factorCount:
+            return list(node.data.factorCount.keys())[0]
+        else:
+            return None
+
+    def getLabels(node):
+        def _collect(b, d):
+            if d.isLeaf:
+                b.add(d.label)
+            return b
+
+        return treefold(node, _collect, set())
+
+    def sampleFactors(node, factor):
+        labels = getLabels(node)
+        return sampleLabels(labels, factor)
+
+    def sampleLabels(labels, factor):
+        if factor in keep:
+            return labels
+        else:
+            N = min(len(labels), max(minTips, math.ceil(proportion * len(labels))))
+            try:
+                sample = rng.sample(labels, N)
+            except ValueError:
+                log(f"Bad sample size ({N}) for population of size ({len(labels)})")
+                sys.exit(1)
+            return sample
+
+    def _select(node, selected, paraGroup, paraFactor):
+        rebelChild = None
+        potentialMembers = []
+        canMerge = True
+        oldFactor = paraFactor
+        for kid in node.kids:
+            factor = getFactor(kid)
+            if not canMerge:
+                potentialMembers.append(kid)
+            else:
+                if isMonophyletic(kid):
+                    if factor == paraFactor or factor is None:
+                        potentialMembers.append(kid)
+                    elif (
+                        factor != paraFactor
+                        and factor != oldFactor
+                        and paraFactor != oldFactor
+                    ):
+                        canMerge = False
+                        potentialMembers.append(kid)
+                    else:
+                        selected.update(sampleLabels(paraGroup, paraFactor))
+                        paraGroup = getLabels(kid)
+                        paraFactor = factor
+                else:
+                    if rebelChild is None:
+                        rebelChild = kid
+                    else:
+                        canMerge = False
+                        selected.update(sampleLabels(paraGroup, paraFactor))
+                        paraFactor = None
+                        paraGroup = set()
+                        selected.update(_select(rebelChild, selected, set(), None))
+                        selected.update(_select(kid, selected, set(), None))
+        if canMerge and rebelChild is not None:
+            for k in potentialMembers:
+                paraGroup.update(getLabels(k))
+            selected.update(_select(rebelChild, selected, paraGroup, paraFactor))
+        else:
+            groups = defaultdict(set)
+            for k in potentialMembers:
+                factor = getFactor(k)
+                if isMonophyletic(k):
+                    if factor == paraFactor or factor is None:
+                        paraGroup.update(getLabels(k))
+                    else:
+                        groups[factor].update(getLabels(k))
+                else:
+                    selected.update(_select(k, selected, set(), None))
+            selected.update(sampleLabels(paraGroup, paraFactor))
+            for (k, v) in groups.items():
+                selected.update(sampleLabels(v, factor=k))
+        return selected
+
+    tree = setFactorCounts(tree)
+    selected = _select(tree, set(), set(), None)
+
+    def _cull(node):
+        chosenOnes = [
+            kid
+            for kid in node.kids
+            if (kid.data.isLeaf and (kid.data.label in selected)) or kid.kids
+        ]
+        return chosenOnes
+
+    sampledTree = treecut(tree, _cull)
+    sampledTree = clean(sampledTree)
+    return sampledTree
+
+
+def sampleProportional(tree, proportion=0.5, keep=[], minTips=3):
+    # recursive sampler
+    def _sampleProportional(node):
+        newkids = []
+        for kid in node.kids:
+            if len(kid.data.factorCount) == 1:
+                if list(kid.data.factorCount.keys())[0] in keep:
+                    newkids.append(kid)
+                else:
+                    N = max(minTips, math.floor(kid.data.nleafs * proportion))
+                    newkids.append(sampleRandom(kid, N))
+            else:
+                newkids.append(_sampleProportional(kid))
+        node.kids = newkids
+        return node
+
+    if not (0 <= proportion <= 1):
+        die("Expected parameter 'proportion' to be a number between 0 and 1")
     if not (0 <= minTips and minTips % 1 == 0):
-        print("Expected parameter 'minTips' to be a positive integer")
-        sys.exit(1)
-    node = setNLeafs(node)
-    return _sampleProportional(node=node, proportion=proportion, keep=keep, minTips=minTips)
-
-def _sampleProportional(node, proportion=0.5, keep=[], minTips=3):
-    newkids = []
-    for kid in node.kids:
-        factorCount = countFactors(kid)
-        if len(factorCount) == 1:
-            if list(factorCount.keys())[0] in keep:
-                newkids.append(kid)
-            else:
-                N = max(minTips, math.floor(kid.nleafs * proportion))
-                newkids.append(sampleRandom(kid, N))
-        else:
-            newkids.append(_sampleProportional(kid, proportion=proportion, keep=keep, minTips=minTips))
-    node.kids = newkids
-    return node
+        die("Expected parameter 'minTips' to be a positive integer")
+    tree = setNLeafs(tree)
+    tree = setFactorCounts(tree)
+    return clean(_sampleProportional(tree))
