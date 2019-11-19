@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import src.parser as sp
-from src.classes import Node
-from src.algorithm import *
+import smot.src.parser as sp
+from smot.src.classes import Node
+from smot.src.algorithm import *
 import parsec as psc
 import unittest
 import random

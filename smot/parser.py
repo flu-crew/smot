@@ -1,5 +1,5 @@
 import parsec as p
-from src.classes import Node
+from smot.classes import Node
 
 
 def p_parens(parser):

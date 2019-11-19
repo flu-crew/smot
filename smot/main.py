@@ -37,9 +37,12 @@ Options
 import signal
 import os
 from docopt import docopt
+from smot.version import __version__
 
 
 def factorTree(tree, args, default=None):
+    import smot.algorithm as alg
+
     if args["--factor-by-field"]:
         try:
             field = int(args["--factor-by-field"])
@@ -47,11 +50,15 @@ def factorTree(tree, args, default=None):
             die(
                 f"""Expected a positive integer for field --factor-by-field, got '{args["--factor-by-field"]}'"""
             )
-        tree = factorByField(tree, field, default=default)
+        tree = alg.factorByField(tree, field, default=default)
     elif args["--factor-by-capture"]:
-        tree = factorByCapture(tree, pat=args["--factor-by-capture"], default=default)
+        tree = alg.factorByCapture(
+            tree, pat=args["--factor-by-capture"], default=default
+        )
     elif args["--factor-by-table"]:
-        tree = factorByTable(tree, filename=args["--factor-by-table"], default=default)
+        tree = alg.factorByTable(
+            tree, filename=args["--factor-by-table"], default=default
+        )
     return tree
 
 
@@ -77,16 +84,15 @@ def cast(args, field, default, lbnd=None, rbnd=None, caster=None, typename=None)
     return x
 
 
-if __name__ == "__main__":
-
+def main():
     if os.name is "posix":
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
-    args = docopt(__doc__, version="smot 0.1.0")
+    args = docopt(__doc__, version=f"smot {__version__}")
 
-    from src.classes import Node
-    from src.parser import p_newick
-    from src.algorithm import *
+    from smot.classes import Node
+    from smot.parser import p_newick
+    import smot.algorithm as alg
     import sys
 
     sys.setrecursionlimit(10 ** 8)
@@ -138,20 +144,20 @@ if __name__ == "__main__":
                 nodeData.label = re.sub(pat, args["<replacement>"], nodeData.label)
             return nodeData
 
-        tree = treemap(tree, fun_)
+        tree = alg.treemap(tree, fun_)
         print(tree.newick())
     elif args["clean"]:
-        tree = clean(tree)
+        tree = alg.clean(tree)
         print(tree.newick())
     elif args["tips"]:
-        tree = setNLeafs(tree)
+        tree = alg.setNLeafs(tree)
 
         def _fun(b, x):
             if x.isLeaf:
                 b.append(x.label)
             return b
 
-        for tip in treefold(tree, _fun, []):
+        for tip in alg.treefold(tree, _fun, []):
             print(tip)
     elif args["sample-equal"] or args["sample-proportional"]:
         tree = factorTree(tree, args)
@@ -169,15 +175,19 @@ if __name__ == "__main__":
             args, "--proportion", 0.5, caster=float, typename="float", lbnd=0, rbnd=1
         )
         if args["sample-equal"]:
-            tree = sampleContext(tree, keep=keep, maxTips=maxTips)
+            tree = alg.sampleContext(tree, keep=keep, maxTips=maxTips)
         elif args["sample-proportional"] and not args["--paraphyletic"]:
-            tree = sampleProportional(
+            tree = alg.sampleProportional(
                 tree, keep=keep, proportion=proportion, minTips=minTips, seed=seed
             )
         elif args["sample-proportional"] and args["--paraphyletic"]:
-            tree = sampleParaphyletic(
+            tree = alg.sampleParaphyletic(
                 tree, keep=keep, proportion=proportion, minTips=minTips, seed=seed
             )
         print(tree.newick())
     else:
         print(tree.newick())
+
+
+if __name__ == "__main__":
+    main()

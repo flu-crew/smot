@@ -7,4 +7,5 @@ python:
  - "nightly"
 install:
     - pip install -r requirements.txt
+    - pip install .
 script: ./runtests.py && cd test-data && make && cd ..

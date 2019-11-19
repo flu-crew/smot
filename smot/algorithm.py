@@ -1,5 +1,5 @@
-from src.classes import Node
-from src.util import log, die
+from smot.classes import Node
+from smot.util import log, die
 from collections import Counter, defaultdict
 import re
 import sys
