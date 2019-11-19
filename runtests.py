@@ -243,28 +243,34 @@ class TestALgorithms(unittest.TestCase):
             sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 5, rng=random.Random(42)),
             sp.p_newick.parse("(B,(A,C,E),D);"),
         )
-        
+
         self.assertEqual(
-            sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)),
+            sampleRandom(
+                sp.p_newick.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)
+            ),
             sp.p_newick.parse("(B,(A,C,E),D);"),
         )
         self.assertEqual(
-            sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)),
+            sampleRandom(
+                sp.p_newick.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)
+            ),
             sp.p_newick.parse("(B,(A,C,E),D);"),
         )
         # this SHOULD work, but there appears to be a bug in unittest
         self.assertEqual(
             sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 2, rng=random.Random(42)),
-            sp.p_newick.parse("(A,E);")
+            sp.p_newick.parse("(A,E);"),
         )
 
     def test_sampleParaphyletic(self):
-        fork = sp.p_newick.parse("(X1|H,(X2|H,(X3|H,(X4|H,((Y1|H,(Y2|H,(Y3|H,(Y4|H,Y5|H)))),X6|S)))));")
+        fork = sp.p_newick.parse(
+            "(X1|H,(X2|H,(X3|H,(X4|H,((Y1|H,(Y2|H,(Y3|H,(Y4|H,Y5|H)))),X6|S)))));"
+        )
         fork = factorByField(fork, field=2)
 
         self.assertEqual(
             sampleParaphyletic(fork, proportion=0.3, keep=["S"], minTips=2, seed=42),
-            sp.p_newick.parse("(X1|H,(X4|H,((Y2|H,Y3|H),X6|S)));")
+            sp.p_newick.parse("(X1|H,(X4|H,((Y2|H,Y3|H),X6|S)));"),
         )
 
     def test_distribute(self):

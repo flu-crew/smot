@@ -86,16 +86,19 @@ def factorByField(tree, field, default=None, sep="|"):
     """
     Factor by the <field>th 1-based index in the tip label.
     """
+
     def _fun(name):
         try:
             return name.split(sep)[field - 1]
         except:
             return default
+
     return factorByLabel(tree, _fun)
 
 
 def factorByCapture(tree, pat, default=None):
     pat = re.compile(pat)
+
     def _fun(name):
         if name:
             m = re.search(pat, name)
@@ -108,6 +111,7 @@ def factorByCapture(tree, pat, default=None):
                 else:
                     return m.groups(0)
         return default
+
     return factorByLabel(tree, _fun)
 
 
@@ -119,10 +123,7 @@ def factorByTable(tree, filename, default=None):
                 (k, v) = line.strip().split("\t")
                 factorMap[k] = v
             except ValueError:
-                print(
-                    "Expected two columns in --factor-by-table file",
-                    file=sys.stderr,
-                )
+                print("Expected two columns in --factor-by-table file", file=sys.stderr)
                 sys.exit(1)
 
         def _fun(name):
@@ -193,9 +194,9 @@ def sampleRandom(node, n, rng):
 
     def _cull(node):
         chosenOnes = [
-            kid for kid in node.kids
-            if (not kid.data.isLeaf) or
-               (kid.data.label in chosen)
+            kid
+            for kid in node.kids
+            if (not kid.data.isLeaf) or (kid.data.label in chosen)
         ]
         return chosenOnes
 

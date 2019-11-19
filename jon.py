@@ -44,7 +44,9 @@ def factorTree(tree, args, default=None):
         try:
             field = int(args["--factor-by-field"])
         except ValueError:
-            die(f"""Expected a positive integer for field --factor-by-field, got '{args["--factor-by-field"]}'""")
+            die(
+                f"""Expected a positive integer for field --factor-by-field, got '{args["--factor-by-field"]}'"""
+            )
         tree = factorByField(tree, field, default=default)
     elif args["--factor-by-capture"]:
         tree = factorByCapture(tree, pat=args["--factor-by-capture"], default=default)
@@ -153,7 +155,13 @@ if __name__ == "__main__":
             print(tip)
     elif args["sample-equal"] or args["sample-proportional"]:
         tree = factorTree(tree, args)
-        keep = cast(args, "--keep", [], caster=lambda x: x.split(","), typename="comma separated list")
+        keep = cast(
+            args,
+            "--keep",
+            [],
+            caster=lambda x: x.split(","),
+            typename="comma separated list",
+        )
         minTips = cast(args, "--min-tips", 3, caster=int, typename="int", lbnd=0)
         maxTips = cast(args, "--max-tips", 5, caster=int, typename="int", lbnd=0)
         seed = cast(args, "--seed", None, caster=int, typename="int", lbnd=0)
