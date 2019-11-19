@@ -1,2 +1,3 @@
 parsec
 biopython
+docopt
