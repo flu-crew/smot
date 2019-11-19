@@ -41,55 +41,15 @@ from docopt import docopt
 
 def factorTree(tree, args, default=None):
     if args["--factor-by-field"]:
-
-        def _fun(name):
-            try:
-                return name.split("|")[int(args["--factor-by-field"]) + 1]
-            except:
-                return default
-
-        tree = factorByLabel(tree, _fun)
+        try:
+            field = int(args["--factor-by-field"])
+        except ValueError:
+            die(f"""Expected a positive integer for field --factor-by-field, got '{args["--factor-by-field"]}'""")
+        tree = factorByField(tree, field, default=default)
     elif args["--factor-by-capture"]:
-        import re
-
-        pat = re.compile(args["--factor-by-capture"])
-
-        def _fun(name):
-            if name:
-                m = re.search(pat, name)
-                if m:
-                    if m.groups(1):
-                        if isinstance(m.groups(1), str):
-                            return m.groups(1)
-                        else:
-                            return m.groups(1)[0]
-                    else:
-                        return m.groups(0)
-            return default
-
-        tree = factorByLabel(tree, _fun)
+        tree = factorByCapture(tree, pat=args["--factor-by-capture"], default=default)
     elif args["--factor-by-table"]:
-        with open(args["--factor-by-table"], "r") as f:
-            factorMap = dict()
-            for line in f.readlines():
-                try:
-                    (k, v) = line.strip().split("\t")
-                    factorMap[k] = v
-                except ValueError:
-                    print(
-                        "Expected two columns in --factor-by-table file",
-                        file=sys.stderr,
-                    )
-                    sys.exit(1)
-
-            def _fun(name):
-                if name:
-                    for k, v in factorMap.items():
-                        if k in name:
-                            return v
-                return default
-
-            tree = factorByLabel(tree, _fun)
+        tree = factorByTable(tree, filename=args["--factor-by-table"], default=default)
     return tree
 
 
@@ -193,10 +153,10 @@ if __name__ == "__main__":
             print(tip)
     elif args["sample-equal"] or args["sample-proportional"]:
         tree = factorTree(tree, args)
-        keep = cast(args, "--keep", [])
+        keep = cast(args, "--keep", [], caster=lambda x: x.split(","), typename="comma separated list")
         minTips = cast(args, "--min-tips", 3, caster=int, typename="int", lbnd=0)
         maxTips = cast(args, "--max-tips", 5, caster=int, typename="int", lbnd=0)
-        seed = cast(args, "--seed", None)
+        seed = cast(args, "--seed", None, caster=int, typename="int", lbnd=0)
         proportion = cast(
             args, "--proportion", 0.5, caster=float, typename="float", lbnd=0, rbnd=1
         )

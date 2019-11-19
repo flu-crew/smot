@@ -1,6 +1,7 @@
 from src.classes import Node
 from src.util import log, die
 from collections import Counter, defaultdict
+import re
 import sys
 import math
 import random
@@ -81,6 +82,59 @@ def factorByLabel(node, fun, **kwargs):
     return treemap(node, mapfun, **kwargs)
 
 
+def factorByField(tree, field, default=None, sep="|"):
+    """
+    Factor by the <field>th 1-based index in the tip label.
+    """
+    def _fun(name):
+        try:
+            return name.split(sep)[field - 1]
+        except:
+            return default
+    return factorByLabel(tree, _fun)
+
+
+def factorByCapture(tree, pat, default=None):
+    pat = re.compile(pat)
+    def _fun(name):
+        if name:
+            m = re.search(pat, name)
+            if m:
+                if m.groups(1):
+                    if isinstance(m.groups(1), str):
+                        return m.groups(1)
+                    else:
+                        return m.groups(1)[0]
+                else:
+                    return m.groups(0)
+        return default
+    return factorByLabel(tree, _fun)
+
+
+def factorByTable(tree, filename, default=None):
+    with open(filename, "r") as f:
+        factorMap = dict()
+        for line in f.readlines():
+            try:
+                (k, v) = line.strip().split("\t")
+                factorMap[k] = v
+            except ValueError:
+                print(
+                    "Expected two columns in --factor-by-table file",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
+        def _fun(name):
+            if name:
+                for k, v in factorMap.items():
+                    if k in name:
+                        return v
+            return default
+
+        return factorByLabel(tree, _fun)
+
+
 def getLeftmost(node):
     """
     Recurse down a tree, returning the leftmost leaf
@@ -110,7 +164,7 @@ def sampleN(node, n):
     return node
 
 
-def sampleRandom(node, n, seed=None):
+def sampleRandom(node, n, rng):
     """
     Sample N random tips from node 
     """
@@ -130,18 +184,24 @@ def sampleRandom(node, n, seed=None):
 
     labels = treefold(node, _collect, set())
 
-    rng = random.Random(seed)
-    keep = rng.sample(labels, n)
+    # The set datastructure is a hash table. Hashes of strings vary between
+    # python sessions. Thus the sorting of elements in a set will also vary
+    # between sessions. So before sampling, the set needs to be converted to a
+    # list of sorted. Otherwise, the selected labels will be random even given
+    # the same random seed.
+    chosen = rng.sample(sorted(list(labels)), n)
 
     def _cull(node):
         chosenOnes = [
-            kid for kid in node.kids if (not kid.data.isLeaf) or kid.data.label in keep
+            kid for kid in node.kids
+            if (not kid.data.isLeaf) or
+               (kid.data.label in chosen)
         ]
         return chosenOnes
 
     sampledTree = treecut(node, _cull)
-    sampledTree = setNLeafs(sampledTree)
     sampledTree = clean(sampledTree)
+    sampledTree = setNLeafs(sampledTree)
     return sampledTree
 
 
@@ -239,7 +299,6 @@ def sampleContext(tree, keep=[], maxTips=5):
 
 
 def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
-
     rng = random.Random(seed)
 
     def isMonophyletic(node):
@@ -273,7 +332,7 @@ def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
         else:
             N = min(len(labels), max(minTips, math.ceil(proportion * len(labels))))
             try:
-                sample = rng.sample(labels, N)
+                sample = rng.sample(sorted(list(labels)), N)
             except ValueError:
                 log(f"Bad sample size ({N}) for population of size ({len(labels)})")
                 sys.exit(1)
@@ -349,7 +408,11 @@ def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
     return sampledTree
 
 
-def sampleProportional(tree, proportion=0.5, keep=[], minTips=3):
+def sampleProportional(tree, proportion=0.5, keep=[], minTips=3, seed=None):
+    log(seed)
+    rng = random.Random(seed)
+    keep = rng.sample(labels, n)
+
     # recursive sampler
     def _sampleProportional(node):
         newkids = []
@@ -359,7 +422,7 @@ def sampleProportional(tree, proportion=0.5, keep=[], minTips=3):
                     newkids.append(kid)
                 else:
                     N = max(minTips, math.floor(kid.data.nleafs * proportion))
-                    newkids.append(sampleRandom(kid, N))
+                    newkids.append(sampleRandom(kid, N, rng=rng))
             else:
                 newkids.append(_sampleProportional(kid))
         node.kids = newkids
