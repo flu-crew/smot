@@ -4,24 +4,24 @@
 Do stuff to trees
 
 Usage:
-    jon tips [--format=<format>] [<filename>]
-    jon plot [--format=<format>] [<filename>]
-    jon sample-equal [--format=<format>]
-                     [--factor-by-field=<factorByField>]
-                     [--factor-by-capture=<capture>]
-                     [--factor-by-table=<tablefile>]
-                     [--keep=<keep>] [--max-tips=<tips>] [--zero] [<filename>]
-    jon sample-proportional [--format=<format>]
-                            [--factor-by-field=<factorByField>]
-                            [--factor-by-capture=<capture>]
-                            [--factor-by-table=<tablefile>]
-                            [--paraphyletic]
-                            [--proportion=<proportion>] [--keep=<keep>] [--seed=<seed>]
-                            [--min-tips=<tips>] [--zero] [<filename>]
-    jon tipsed [--format=<format>] <pattern> <replacement> [<filename>]
-    jon midpoint [--format=<format>] [<filename>]
-    jon random [--format=<format>] [<tipnames>]
-    jon clean [<filename>]
+    smot tips [--format=<format>] [<filename>]
+    smot plot [--format=<format>] [<filename>]
+    smot sample-equal [--format=<format>]
+                      [--factor-by-field=<factorByField>]
+                      [--factor-by-capture=<capture>]
+                      [--factor-by-table=<tablefile>]
+                      [--keep=<keep>] [--max-tips=<tips>] [--zero] [<filename>]
+    smot sample-proportional [--format=<format>]
+                             [--factor-by-field=<factorByField>]
+                             [--factor-by-capture=<capture>]
+                             [--factor-by-table=<tablefile>]
+                             [--paraphyletic]
+                             [--proportion=<proportion>] [--keep=<keep>] [--seed=<seed>]
+                             [--min-tips=<tips>] [--zero] [<filename>]
+    smot tipsed [--format=<format>] <pattern> <replacement> [<filename>]
+    smot midpoint [--format=<format>] [<filename>]
+    smot random [--format=<format>] [<tipnames>]
+    smot clean [<filename>]
 
 Options
     --zero                    Set branches without lengths to 0  
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     if os.name is "posix":
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
-    args = docopt(__doc__, version="jon 0.1.0")
+    args = docopt(__doc__, version="smot 0.1.0")
 
     from src.classes import Node
     from src.parser import p_newick
