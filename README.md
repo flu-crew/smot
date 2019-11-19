@@ -9,4 +9,4 @@ Python modules:
  * parsec
  * docopt
 
-Python v3.5 and later (required for Biopython)
+Python v3.6 and later (required for string interpolation)
