@@ -20,7 +20,7 @@ Usage:
                              [--min-tips=<tips>] [--zero] [<filename>]
     smot tipsed [--format=<format>] <pattern> <replacement> [<filename>]
     smot midpoint [--format=<format>] [<filename>]
-    smot random [--format=<format>] [<tipnames>]
+    smot random [--format=<format>] [--seed=seed] [<tipnames>]
     smot clean [<filename>]
 
 Options
@@ -101,12 +101,15 @@ def main():
 
     if args["random"]:
         from Bio import Phylo
+        import random
 
         if args["<tipnames>"]:
             with open(tipfile, "r") as f:
                 names = [name.strip() for name in f.readlines()]
         else:
             names = [name.strip() for name in sys.stdin]
+        seed = cast(args, "--seed", None, caster=int, typename="int", lbnd=0)
+        random.seed(seed)
         btree = Phylo.BaseTree.Tree.randomized(names)
         Phylo.write(btree, file=sys.stdout, format="newick")
         sys.exit(0)

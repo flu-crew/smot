@@ -412,7 +412,6 @@ def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
 def sampleProportional(tree, proportion=0.5, keep=[], minTips=3, seed=None):
     log(seed)
     rng = random.Random(seed)
-    keep = rng.sample(labels, n)
 
     # recursive sampler
     def _sampleProportional(node):
