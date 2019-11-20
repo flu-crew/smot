@@ -410,19 +410,24 @@ def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
 
 
 def sampleProportional(tree, proportion=0.5, keep=[], minTips=3, seed=None):
-    log(seed)
     rng = random.Random(seed)
+
+    def _sample(kid):
+        N = max(minTips, math.floor(kid.data.nleafs * proportion))
+        return sampleRandom(kid, N, rng=rng)
 
     # recursive sampler
     def _sampleProportional(node):
         newkids = []
         for kid in node.kids:
-            if len(kid.data.factorCount) == 1:
+            nfactors = len(kid.data.factorCount)
+            if nfactors == 0:
+                newkids.append(_sample(kid))
+            elif nfactors == 1:
                 if list(kid.data.factorCount.keys())[0] in keep:
                     newkids.append(kid)
                 else:
-                    N = max(minTips, math.floor(kid.data.nleafs * proportion))
-                    newkids.append(sampleRandom(kid, N, rng=rng))
+                    newkids.append(_sample(kid))
             else:
                 newkids.append(_sampleProportional(kid))
         node.kids = newkids

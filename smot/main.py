@@ -10,11 +10,13 @@ Usage:
                       [--factor-by-field=<factorByField>]
                       [--factor-by-capture=<capture>]
                       [--factor-by-table=<tablefile>]
+                      [--default=<defaultFactor>]
                       [--keep=<keep>] [--max-tips=<tips>] [--zero] [<filename>]
     smot sample-proportional [--format=<format>]
                              [--factor-by-field=<factorByField>]
                              [--factor-by-capture=<capture>]
                              [--factor-by-table=<tablefile>]
+                             [--default=<defaultFactor>]
                              [--paraphyletic]
                              [--proportion=<proportion>] [--keep=<keep>] [--seed=<seed>]
                              [--min-tips=<tips>] [--zero] [<filename>]
@@ -31,6 +33,7 @@ Options
     --factor-by-field INT     Factor by field index (with '|' delimiters, for now)
     --factor-by-capture REGEX A regular expression with a capture for determining factors from labels
     -p --proportion NUM       The proportion of tips in a clade to keep
+    -d --default STR          The name to assign to tips that do not match a factor
     --paraphyletic            Sample across branches
 """
 
@@ -163,7 +166,8 @@ def main():
         for tip in alg.treefold(tree, _fun, []):
             print(tip)
     elif args["sample-equal"] or args["sample-proportional"]:
-        tree = factorTree(tree, args)
+        defaultFactor = cast(args, "--default", None)
+        tree = factorTree(tree, args, default=defaultFactor)
         keep = cast(
             args,
             "--keep",
