@@ -6,6 +6,12 @@ Do stuff to trees
 Usage:
     smot tips [--format=<format>] [<filename>]
     smot plot [--format=<format>] [<filename>]
+    smot factor [--format=<format>]
+                [--factor-by-field=<factorByField>]
+                [--factor-by-capture=<capture>]
+                [--factor-by-table=<tablefile>]
+                [--default=<defaultFactor>]
+                [--impute] [<filename>]
     smot sample-equal [--format=<format>]
                       [--factor-by-field=<factorByField>]
                       [--factor-by-capture=<capture>]
@@ -35,6 +41,7 @@ Options
     -p --proportion NUM       The proportion of tips in a clade to keep
     -d --default STR          The name to assign to tips that do not match a factor
     --paraphyletic            Sample across branches
+    --impute                  Infer the factor from context, if possible
 """
 
 import signal
@@ -62,6 +69,7 @@ def factorTree(tree, args, default=None):
         tree = alg.factorByTable(
             tree, filename=args["--factor-by-table"], default=default
         )
+    tree = alg.setFactorCounts(tree)
     return tree
 
 
@@ -165,6 +173,23 @@ def main():
 
         for tip in alg.treefold(tree, _fun, []):
             print(tip)
+    elif args["factor"]:
+        defaultFactor = cast(args, "--default", None)
+        tree = factorTree(tree, args, default=defaultFactor)
+        if args["--impute"]:
+            tree = alg.imputeFactors(tree)
+        def _fun(b, x):
+            if x.isLeaf:
+                if x.factor is None:
+                    factor = defaultFactor
+                else:
+                    factor = x.factor
+                b.append(f"{x.label}\t{factor}")
+            return b
+
+        for row in alg.treefold(tree, _fun, []):
+            print(row)
+
     elif args["sample-equal"] or args["sample-proportional"]:
         defaultFactor = cast(args, "--default", None)
         tree = factorTree(tree, args, default=defaultFactor)

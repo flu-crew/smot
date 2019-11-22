@@ -135,6 +135,33 @@ def factorByTable(tree, filename, default=None):
 
         return factorByLabel(tree, _fun)
 
+def isMonophyletic(node):
+    """
+    Check is a branch is monophyletic relative to the defined factors. Assumes
+    that `setFactorCounts` has been called on the tree.
+    """
+    return len(node.data.factorCount) <= 1
+
+
+def getFactor(node):
+    if node.data.factorCount:
+        return list(node.data.factorCount.keys())[0]
+    else:
+        return None
+
+def imputeFactors(tree):
+    def setFactors(node, factor):
+        def _fun(b):
+            b.factor = factor
+            return b
+        return treemap(node, _fun)
+
+    if tree.data.factorCount and isMonophyletic(tree):
+        tree = setFactors(tree, getFactor(tree))
+    else:
+        newkids = [imputeFactors(kid) for kid in tree.kids]
+        tree.kids = newkids
+    return tree
 
 def getLeftmost(node):
     """
@@ -298,22 +325,8 @@ def sampleContext(tree, keep=[], maxTips=5):
     tree = setFactorCounts(tree)
     return clean(_sampleContext(tree))
 
-
 def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
     rng = random.Random(seed)
-
-    def isMonophyletic(node):
-        """
-        Check is a branch is monophyletic relative to the defined factors. Assumes
-        that `setFactorCounts` has been called on the tree.
-        """
-        return len(node.data.factorCount) <= 1
-
-    def getFactor(node):
-        if node.data.factorCount:
-            return list(node.data.factorCount.keys())[0]
-        else:
-            return None
 
     def getLabels(node):
         def _collect(b, d):
@@ -322,10 +335,6 @@ def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
             return b
 
         return treefold(node, _collect, set())
-
-    def sampleFactors(node, factor):
-        labels = getLabels(node)
-        return sampleLabels(labels, factor)
 
     def sampleLabels(labels, factor):
         if factor in keep:

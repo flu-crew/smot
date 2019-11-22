@@ -1,0 +1,6 @@
+X1|H	NA
+X2|H	NA
+X3|H	NA
+X4|H	NA
+X5|H	NA
+X6|S	NA

@@ -24,4 +24,7 @@ all:
 	# this should proportionally sample while retaining all global clades and unknowns representatives 
 	smot sample-proportional --proportion=0.01 --factor-by-capture='(1[ABC]\.[0-9.]*)' --seed=42 H1.tre > .obs-h1-factored-prop.tre
 	diff .obs-h1-factored-prop.tre .exp-h1-factored-prop.tre
+	# set default factor to NA, then list
+	smot factor --default=NA fishbone.tre > .obs-factor-default.txt
+	diff .exp-factor-default.txt .obs-factor-default.txt
 	rm .obs-*
