@@ -135,6 +135,7 @@ def factorByTable(tree, filename, default=None):
 
         return factorByLabel(tree, _fun)
 
+
 def isMonophyletic(node):
     """
     Check is a branch is monophyletic relative to the defined factors. Assumes
@@ -149,11 +150,13 @@ def getFactor(node):
     else:
         return None
 
+
 def imputeFactors(tree):
     def setFactors(node, factor):
         def _fun(b):
             b.factor = factor
             return b
+
         return treemap(node, _fun)
 
     if tree.data.factorCount and isMonophyletic(tree):
@@ -162,6 +165,7 @@ def imputeFactors(tree):
         newkids = [imputeFactors(kid) for kid in tree.kids]
         tree.kids = newkids
     return tree
+
 
 def getLeftmost(node):
     """
@@ -324,6 +328,7 @@ def sampleContext(tree, keep=[], maxTips=5):
     tree = setNLeafs(tree)
     tree = setFactorCounts(tree)
     return clean(_sampleContext(tree))
+
 
 def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
     rng = random.Random(seed)

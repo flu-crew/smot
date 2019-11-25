@@ -1,5 +1,6 @@
 0.3.0 [2019-xx-xx]
 
+ * let factors be appended or prepended to tip labels
  * merge sampling commands into one
 
 0.2.0 [2019-11-20]
