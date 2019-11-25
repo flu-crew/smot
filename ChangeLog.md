@@ -1,3 +1,7 @@
+0.3.0 [2019-xx-xx]
+
+ * merge sampling commands into one
+
 0.2.0 [2019-11-20]
 
  * add factor imputing

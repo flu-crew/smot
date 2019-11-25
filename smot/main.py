@@ -6,26 +6,22 @@ Do stuff to trees
 Usage:
     smot tips [--format=<format>] [<filename>]
     smot plot [--format=<format>] [<filename>]
+    smot sample (--equal|--prop|--para) [--format=<format>] 
+                [--factor-by-capture=<capture>]
+                [--factor-by-field=<factorByField>]
+                [--factor-by-table=<tablefile>]
+                [--keep=<keep>]
+                [--default=<defaultFactor>]
+                [--max-tips=<tips>] [--min-tips=<tips>]
+                [--proportion=<proportion>]
+                [--seed=<seed>] [--zero]
+                [<filename>]
     smot factor [--format=<format>]
                 [--factor-by-field=<factorByField>]
                 [--factor-by-capture=<capture>]
                 [--factor-by-table=<tablefile>]
                 [--default=<defaultFactor>]
                 [--impute] [<filename>]
-    smot sample-equal [--format=<format>]
-                      [--factor-by-field=<factorByField>]
-                      [--factor-by-capture=<capture>]
-                      [--factor-by-table=<tablefile>]
-                      [--default=<defaultFactor>]
-                      [--keep=<keep>] [--max-tips=<tips>] [--zero] [<filename>]
-    smot sample-proportional [--format=<format>]
-                             [--factor-by-field=<factorByField>]
-                             [--factor-by-capture=<capture>]
-                             [--factor-by-table=<tablefile>]
-                             [--default=<defaultFactor>]
-                             [--paraphyletic]
-                             [--proportion=<proportion>] [--keep=<keep>] [--seed=<seed>]
-                             [--min-tips=<tips>] [--zero] [<filename>]
     smot tipsed [--format=<format>] <pattern> <replacement> [<filename>]
     smot midpoint [--format=<format>] [<filename>]
     smot random [--format=<format>] [--seed=seed] [<tipnames>]
@@ -35,12 +31,15 @@ Options
     --zero                    Set branches without lengths to 0  
     -f --format STR           Tree format (newick or nexus)
     -k --keep LIST            Factors to keep
-    -m --max-tips INT         Maximum number of tips to keep per unkept factor
+    --equal                   Sampling method - equally sample from each subtree
+    --prop                    Sampling method - proportionally sample from tips
+    --para                    Sampling method - proportional sampling across branches
+    -m --max-tips INT         With sample-equal, maximum number of tips to keep per unkept factor
+    -m --min-tips INT         With sample-prop and sample-para, maximum number of tips to keep per unkept factor
     --factor-by-field INT     Factor by field index (with '|' delimiters, for now)
     --factor-by-capture REGEX A regular expression with a capture for determining factors from labels
     -p --proportion NUM       The proportion of tips in a clade to keep
     -d --default STR          The name to assign to tips that do not match a factor
-    --paraphyletic            Sample across branches
     --impute                  Infer the factor from context, if possible
 """
 
@@ -190,9 +189,8 @@ def main():
         for row in alg.treefold(tree, _fun, []):
             print(row)
 
-    elif args["sample-equal"] or args["sample-proportional"]:
-        defaultFactor = cast(args, "--default", None)
-        tree = factorTree(tree, args, default=defaultFactor)
+    elif args["sample"]:
+        tree = factorTree(tree, args, default=cast(args, "--default", None))
         keep = cast(
             args,
             "--keep",
@@ -200,23 +198,28 @@ def main():
             caster=lambda x: x.split(","),
             typename="comma separated list",
         )
-        minTips = cast(args, "--min-tips", 3, caster=int, typename="int", lbnd=0)
         maxTips = cast(args, "--max-tips", 5, caster=int, typename="int", lbnd=0)
-        seed = cast(args, "--seed", None, caster=int, typename="int", lbnd=0)
+        if args["--equal"]:
+            tree = alg.sampleContext(tree, keep=keep, maxTips=maxTips)
+            print(tree.newick())
+            sys.exit(0)
+
         proportion = cast(
             args, "--proportion", 0.5, caster=float, typename="float", lbnd=0, rbnd=1
         )
-        if args["sample-equal"]:
-            tree = alg.sampleContext(tree, keep=keep, maxTips=maxTips)
-        elif args["sample-proportional"] and not args["--paraphyletic"]:
+        minTips = cast(args, "--min-tips", 3, caster=int, typename="int", lbnd=0)
+        seed = cast(args, "--seed", None, caster=int, typename="int", lbnd=0)
+
+        if args["--prop"]:
             tree = alg.sampleProportional(
                 tree, keep=keep, proportion=proportion, minTips=minTips, seed=seed
             )
-        elif args["sample-proportional"] and args["--paraphyletic"]:
+        elif args["--para"]:
             tree = alg.sampleParaphyletic(
                 tree, keep=keep, proportion=proportion, minTips=minTips, seed=seed
             )
         print(tree.newick())
+        sys.exit(0)
     else:
         print(tree.newick())
 
