@@ -4,6 +4,7 @@
 Do stuff to trees
 
 Usage:
+    smot convert --from=<from> --to=<to> [<filename>]
     smot tips [--format=<format>] [<filename>]
     smot plot [--format=<format>] [<filename>]
     smot sample (equal|prop|para) [--format=<format>] 
@@ -128,6 +129,12 @@ def main():
         f = open(args["<filename>"], "r")
     else:
         f = sys.stdin
+
+    if args["convert"]:
+        from Bio import Phylo
+        tree = list(Phylo.parse(f, format=args["--from"]))[0]
+        Phylo.write(tree.clade, file=sys.stdout, format=args["--to"])
+        sys.exit(1)
 
     if args["midpoint"]:
         from Bio import Phylo

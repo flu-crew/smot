@@ -1,5 +1,6 @@
 0.3.0 [2019-xx-xx]
 
+ * add BioPython-based (slow and buggy) convert function
  * let factors be appended or prepended to tip labels
  * merge sampling commands into one
 
