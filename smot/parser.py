@@ -1,4 +1,6 @@
 import parsec as p
+import re
+from smot.util import concat, rmNone, die
 from smot.classes import Node
 
 
@@ -12,7 +14,6 @@ def p_brackets(parser):
 
 def p_tuple(parser):
     return p_parens(p.sepBy1(parser, p.string(",")))
-
 
 p_number = (
     p.regex("-?\d\.?\d*[eE]-?\d+") ^ p.regex("-?\d+\.\d+") ^ p.regex("-?\d+")
@@ -44,3 +45,17 @@ def p_node():
 
 
 p_newick = p_node << p.string(";")
+
+def dieIfMultiple(xs):
+    if len(xs) == 1:
+        return xs[0]
+    else:
+        die(f"Expected a single entry in this NEXUS file, found {len(xs)}")
+
+p_boring_line = p.regex("[^\n]*\n").parsecmap(lambda x: None)
+
+p_nexus_line = (p.regex("\s*tree\s+[^=]+=[^(]*", re.I) >> p_newick << p.string("\n")) ^ p_boring_line
+
+p_nexus = p.string("#NEXUS") >> p.many(p_nexus_line).parsecmap(rmNone).parsecmap(dieIfMultiple)
+
+p_tree = p_nexus ^ p_newick

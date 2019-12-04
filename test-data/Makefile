@@ -32,3 +32,8 @@ all:
 	smot factor append --default=NA fishbone.tre > .obs-factor-append-default.txt
 	diff .exp-factor-append-default.txt .obs-factor-append-default.txt
 	rm .obs-*
+	# test parsing of newich and nexus files
+	smot tips H1.tre > a
+	smot tips H1.nexus > b
+	diff a b
+	rm a b

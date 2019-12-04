@@ -102,7 +102,7 @@ def main():
     args = docopt(__doc__, version=f"smot {__version__}")
 
     from smot.classes import Node
-    from smot.parser import p_newick
+    from smot.parser import p_tree
     import smot.algorithm as alg
     import sys
 
@@ -151,8 +151,8 @@ def main():
         sys.exit(0)
 
     rawtree = f.readlines()
-    rawtree = "".join(rawtree).strip()
-    tree = p_newick.parse(rawtree)
+    rawtree = "\n".join(rawtree).strip()
+    tree = p_tree.parse(rawtree)
 
     if args["tipsed"]:
         import re

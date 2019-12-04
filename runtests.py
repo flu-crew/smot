@@ -78,11 +78,11 @@ class TestParsers(unittest.TestCase):
 
     def test_newick(self):
         self.assertEqual(
-            sp.p_newick.parse("(A[foo]:0.42)Root;"),
+            sp.p_tree.parse("(A[foo]:0.42)Root;"),
             sp.Node(kids=[sp.Node(label="A", form="foo", length=0.42)], label="Root"),
         )
         self.assertEqual(
-            sp.p_newick.parse("(B,(A,C,E),D);"),
+            sp.p_tree.parse("(B,(A,C,E),D);"),
             sp.Node(
                 kids=[
                     sp.Node(label="B"),
@@ -102,17 +102,17 @@ class TestParsers(unittest.TestCase):
 class TestStringify(unittest.TestCase):
     def test_stringify(self):
         s = "(B|a,(A|b,C|b,E|b),D|c);"
-        self.assertEqual(sp.p_newick.parse(s).newick(), s)
+        self.assertEqual(sp.p_tree.parse(s).newick(), s)
 
     def test_string_complex(self):
         s = """("that's cool"[&!color=#000000]:0.3);"""
-        self.assertEqual(sp.p_newick.parse(s).newick(), s)
+        self.assertEqual(sp.p_tree.parse(s).newick(), s)
 
         s = """(A:3);"""
-        self.assertEqual(sp.p_newick.parse(s).newick(), s)
+        self.assertEqual(sp.p_tree.parse(s).newick(), s)
 
         s = """('that"s !@#$%^&)(*&^[]cool'[&!color=#000000]:0.3);"""
-        self.assertEqual(sp.p_newick.parse(s).newick(), s)
+        self.assertEqual(sp.p_tree.parse(s).newick(), s)
 
 
 class TestALgorithms(unittest.TestCase):
@@ -123,7 +123,7 @@ class TestALgorithms(unittest.TestCase):
             return x
 
         self.assertEqual(
-            treemap(sp.p_newick.parse("(B,(A,C,E),D);"), _lower),
+            treemap(sp.p_tree.parse("(B,(A,C,E),D);"), _lower),
             sp.Node(
                 kids=[
                     sp.Node(label="b"),
@@ -145,7 +145,7 @@ class TestALgorithms(unittest.TestCase):
             return b
 
         self.assertEqual(
-            treefold(sp.p_newick.parse("(B,(A,C,E),D);"), _fun, []),
+            treefold(sp.p_tree.parse("(B,(A,C,E),D);"), _fun, []),
             [None, "B", None, "A", "C", "E", "D"],
         )
 
@@ -157,7 +157,7 @@ class TestALgorithms(unittest.TestCase):
                 return None
 
         self.assertEqual(
-            factorByLabel(sp.p_newick.parse("(B|a,(A|b,C|b,E|b),D|c);"), _fun),
+            factorByLabel(sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);"), _fun),
             sp.Node(
                 kids=[
                     sp.Node(label="B|a", factor="a"),
@@ -175,13 +175,13 @@ class TestALgorithms(unittest.TestCase):
 
     def test_getLeftmost(self):
         self.assertEqual(
-            getLeftmost(sp.p_newick.parse("(B,(A,C,E),D);")), Node(label="B")
+            getLeftmost(sp.p_tree.parse("(B,(A,C,E),D);")), Node(label="B")
         )
 
     def test_sampleContext(self):
         self.assertEqual(
             sampleContext(
-                factorByField(sp.p_newick.parse("(B|a,(A|b,C|b,E|b),D|c);"), field=2),
+                factorByField(sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);"), field=2),
                 keep=[],
                 maxTips=1,
             ),
@@ -196,7 +196,7 @@ class TestALgorithms(unittest.TestCase):
 
         self.assertEqual(
             sampleContext(
-                factorByField(sp.p_newick.parse("(B|a,(A|b,C|b,E|b),D|c);"), field=2),
+                factorByField(sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);"), field=2),
                 keep=[],
                 maxTips=2,
             ),
@@ -216,61 +216,61 @@ class TestALgorithms(unittest.TestCase):
 
     def test_clean(self):
         self.assertEqual(
-            clean(sp.p_newick.parse("(B,((A)),D);")), sp.p_newick.parse("(B,A,D);")
+            clean(sp.p_tree.parse("(B,((A)),D);")), sp.p_tree.parse("(B,A,D);")
         )
         self.assertEqual(
-            clean(sp.p_newick.parse("(((A)));")), sp.p_newick.parse("(A);")
+            clean(sp.p_tree.parse("(((A)));")), sp.p_tree.parse("(A);")
         )
         self.assertEqual(
-            clean(sp.p_newick.parse("((((((B)),((A))))));")),
-            sp.p_newick.parse("(B,A);"),
+            clean(sp.p_tree.parse("((((((B)),((A))))));")),
+            sp.p_tree.parse("(B,A);"),
         )
         self.assertEqual(
-            clean(sp.p_newick.parse("((((A,B))));")), sp.p_newick.parse("(A,B);")
+            clean(sp.p_tree.parse("((((A,B))));")), sp.p_tree.parse("(A,B);")
         )
         self.assertEqual(
-            clean(sp.p_newick.parse("(((A,B)),((((C)))));")),
-            sp.p_newick.parse("((A,B),C);"),
+            clean(sp.p_tree.parse("(((A,B)),((((C)))));")),
+            sp.p_tree.parse("((A,B),C);"),
         )
         self.assertEqual(
-            clean(sp.p_newick.parse("(B:1,((A:3):2):1,D:1);")),
-            sp.p_newick.parse("(B:1,A:6,D:1);"),
+            clean(sp.p_tree.parse("(B:1,((A:3):2):1,D:1);")),
+            sp.p_tree.parse("(B:1,A:6,D:1);"),
         )
 
     def test_sampleRandom(self):
 
         self.assertEqual(
-            sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 5, rng=random.Random(42)),
-            sp.p_newick.parse("(B,(A,C,E),D);"),
+            sampleRandom(sp.p_tree.parse("(B,(A,C,E),D);"), 5, rng=random.Random(42)),
+            sp.p_tree.parse("(B,(A,C,E),D);"),
         )
 
         self.assertEqual(
             sampleRandom(
-                sp.p_newick.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)
+                sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)
             ),
-            sp.p_newick.parse("(B,(A,C,E),D);"),
+            sp.p_tree.parse("(B,(A,C,E),D);"),
         )
         self.assertEqual(
             sampleRandom(
-                sp.p_newick.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)
+                sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)
             ),
-            sp.p_newick.parse("(B,(A,C,E),D);"),
+            sp.p_tree.parse("(B,(A,C,E),D);"),
         )
         # this SHOULD work, but there appears to be a bug in unittest
         self.assertEqual(
-            sampleRandom(sp.p_newick.parse("(B,(A,C,E),D);"), 2, rng=random.Random(42)),
-            sp.p_newick.parse("(A,E);"),
+            sampleRandom(sp.p_tree.parse("(B,(A,C,E),D);"), 2, rng=random.Random(42)),
+            sp.p_tree.parse("(A,E);"),
         )
 
     def test_sampleParaphyletic(self):
-        fork = sp.p_newick.parse(
+        fork = sp.p_tree.parse(
             "(X1|H,(X2|H,(X3|H,(X4|H,((Y1|H,(Y2|H,(Y3|H,(Y4|H,Y5|H)))),X6|S)))));"
         )
         fork = factorByField(fork, field=2)
 
         self.assertEqual(
             sampleParaphyletic(fork, proportion=0.3, keep=["S"], minTips=2, seed=42),
-            sp.p_newick.parse("(X1|H,(X4|H,((Y2|H,Y3|H),X6|S)));"),
+            sp.p_tree.parse("(X1|H,(X4|H,((Y2|H,Y3|H),X6|S)));"),
         )
 
     def test_distribute(self):
@@ -286,7 +286,7 @@ class TestALgorithms(unittest.TestCase):
         self.assertEqual(distribute(1, 2, [0, 10]), [0, 1])
 
     def test_sampleN(self):
-        self.assertEqual(str(sampleN(sp.p_newick.parse("(B,(A,C,E),D);"), 2)), "(B,A)")
+        self.assertEqual(str(sampleN(sp.p_tree.parse("(B,(A,C,E),D);"), 2)), "(B,A)")
 
 
 if __name__ == "__main__":
