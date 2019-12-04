@@ -218,12 +218,9 @@ class TestALgorithms(unittest.TestCase):
         self.assertEqual(
             clean(sp.p_tree.parse("(B,((A)),D);")), sp.p_tree.parse("(B,A,D);")
         )
+        self.assertEqual(clean(sp.p_tree.parse("(((A)));")), sp.p_tree.parse("(A);"))
         self.assertEqual(
-            clean(sp.p_tree.parse("(((A)));")), sp.p_tree.parse("(A);")
-        )
-        self.assertEqual(
-            clean(sp.p_tree.parse("((((((B)),((A))))));")),
-            sp.p_tree.parse("(B,A);"),
+            clean(sp.p_tree.parse("((((((B)),((A))))));")), sp.p_tree.parse("(B,A);")
         )
         self.assertEqual(
             clean(sp.p_tree.parse("((((A,B))));")), sp.p_tree.parse("(A,B);")
@@ -245,15 +242,11 @@ class TestALgorithms(unittest.TestCase):
         )
 
         self.assertEqual(
-            sampleRandom(
-                sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)
-            ),
+            sampleRandom(sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)),
             sp.p_tree.parse("(B,(A,C,E),D);"),
         )
         self.assertEqual(
-            sampleRandom(
-                sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)
-            ),
+            sampleRandom(sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)),
             sp.p_tree.parse("(B,(A,C,E),D);"),
         )
         # this SHOULD work, but there appears to be a bug in unittest

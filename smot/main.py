@@ -132,6 +132,7 @@ def main():
 
     if args["convert"]:
         from Bio import Phylo
+
         tree = list(Phylo.parse(f, format=args["--from"]))[0]
         Phylo.write(tree.clade, file=sys.stdout, format=args["--to"])
         sys.exit(1)
