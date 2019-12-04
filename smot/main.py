@@ -5,9 +5,9 @@ Do stuff to trees
 
 Usage:
     smot convert --from=<from> --to=<to> [<filename>]
-    smot tips [--format=<format>] [<filename>]
-    smot plot [--format=<format>] [<filename>]
-    smot sample (equal|prop|para) [--format=<format>] 
+    smot tips [<filename>]
+    smot plot [<filename>]
+    smot sample (equal|prop|para)
         [--factor-by-capture=<capture>]
         [--factor-by-field=<factorByField>]
         [--factor-by-table=<tablefile>]
@@ -16,21 +16,19 @@ Usage:
         [--proportion=<proportion>] [--seed=<seed>] [--zero]
         [<filename>]
     smot factor (table|prepend|append) 
-        [--format=<format>]
         [--factor-by-field=<factorByField>]
         [--factor-by-capture=<capture>]
         [--factor-by-table=<tablefile>]
         [--default=<defaultFactor>]
         [--impute]
         [<filename>]
-    smot tipsed [--format=<format>] <pattern> <replacement> [<filename>]
-    smot midpoint [--format=<format>] [<filename>]
-    smot random [--format=<format>] [--seed=seed] [<tipnames>]
+    smot tipsed <pattern> <replacement> [<filename>]
+    smot midpoint [<filename>]
+    smot random [--seed=seed] [<tipnames>]
     smot clean [<filename>]
 
 Options
     --zero                    Set branches without lengths to 0  
-    -f --format STR           Tree format (newick or nexus)
     -k --keep LIST            Factors to keep
     equal                     Sampling method - equally sample from each subtree
     prop                      Sampling method - proportionally sample from tips
@@ -108,8 +106,6 @@ def main():
 
     sys.setrecursionlimit(10 ** 8)
 
-    format = cast(args, "--format", "newick")
-
     if args["random"]:
         from Bio import Phylo
         import random
@@ -125,35 +121,35 @@ def main():
         Phylo.write(btree, file=sys.stdout, format="newick")
         sys.exit(0)
 
+    if args["convert"]:
+        from Bio import Phylo
+
+        Phylo.convert(args["<filename>"], args["--from"], sys.stdout, args["--to"])
+        sys.exit(1)
+
     if args["<filename>"]:
         f = open(args["<filename>"], "r")
     else:
         f = sys.stdin
 
-    if args["convert"]:
-        from Bio import Phylo
-
-        tree = list(Phylo.parse(f, format=args["--from"]))[0]
-        Phylo.write(tree.clade, file=sys.stdout, format=args["--to"])
-        sys.exit(1)
+    rawtree = f.readlines()
+    rawtree = "\n".join(rawtree).strip()
+    tree = p_tree.parse(rawtree)
 
     if args["midpoint"]:
         from Bio import Phylo
 
-        tree = list(Phylo.parse(f, format=format))[0]
-        tree.root_at_midpoint()
-        Phylo.write(tree.clade, file=sys.stdout, format="newick")
+        btree = Phylo.BaseTree.Tree.from_clade(tree.asBiopythonTree())
+        btree.root_at_midpoint()
+        Phylo.write(btree.clade, file=sys.stdout, format="newick")
         sys.exit(0)
     elif args["plot"]:
         from Bio import Phylo
 
-        btree = list(Phylo.parse(f, format=format))[0]
+        btree = Phylo.BaseTree.Tree.from_clade(tree.asBiopythonTree())
+        btree.ladderize(reverse=True)
         Phylo.draw(btree)
         sys.exit(0)
-
-    rawtree = f.readlines()
-    rawtree = "\n".join(rawtree).strip()
-    tree = p_tree.parse(rawtree)
 
     if args["tipsed"]:
         import re
@@ -168,8 +164,12 @@ def main():
         tree = alg.treemap(tree, fun_)
         print(tree.newick())
     elif args["clean"]:
+        from Bio import Phylo
+
         tree = alg.clean(tree)
-        print(tree.newick())
+        btree = Phylo.BaseTree.Tree.from_clade(tree.asBiopythonTree())
+        btree.ladderize(reverse=True)
+        Phylo.write(btree, file=sys.stdout, format="newick")
     elif args["tips"]:
         tree = alg.setNLeafs(tree)
 
