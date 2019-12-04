@@ -1,9 +1,12 @@
-0.3.0 [2019-xx-xx]
+0.3.0 [2019-12-04]
 
  * allow automatic reading of NEXUS
- * add BioPython-based (slow and buggy) convert function
+ * remove '--format' option (infer input format and write newick)
+ * add BioPython-based convert function
  * let factors be appended or prepended to tip labels
- * merge sampling commands into one
+ * merge sampling commands
+ * ladderize tree before plotting
+ * `clean` command also ladderizes the tree 
 
 0.2.0 [2019-11-20]
 

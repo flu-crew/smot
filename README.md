@@ -1,6 +1,30 @@
 [![Build Status](https://travis-ci.org/arendsee/smot.svg?branch=master)](https://travis-ci.org/arendsee/smot)
+![PyPI](https://img.shields.io/pypi/v/smot.svg)
 
-# smot
+# smot - Simple Manipulation Of Trees
+
+`smot` is a command line tool for manipulating, summarizing, and sampling from
+phylogenetic trees.
+
+
+ | subcommand | description                                      |
+ | ---------- | ------------------------------------------------ |
+ | convert    | convert tree format                              |
+ | tips       | list tip labels                                  |
+ | plot       | plot the tree                                    |
+ | sample     | sub-sample a tree                                |
+ | factor     | integrate and/or infer classes for tips          |
+ | tipsed     | regex-based search and replace across tip labels |
+ | midpoint   | root tree by midpoint                            |
+ | random     | make random tree given list of tip labels        |
+ | clean      | remove singleton nodes and ladderize             |
+
+
+## Installation
+
+``` sh
+pip install smot
+```
 
 ## Requirements
 
@@ -11,7 +35,14 @@ Python modules:
 
 Python v3.6 and later (required for string interpolation)
 
-## Example
+## Examples
+
+Accessing usage information for each subcommand:
+
+``` sh
+smot -h
+```
+
 
 ![](images/pdm-1.png)
 
