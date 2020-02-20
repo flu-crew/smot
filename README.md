@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/arendsee/smot.svg?branch=master)](https://travis-ci.org/arendsee/smot)
+[![Build Status](https://travis-ci.org/flu-crew/smot.svg?branch=master)](https://travis-ci.org/flu-crew/smot)
 ![PyPI](https://img.shields.io/pypi/v/smot.svg)
 
 # smot - Simple Manipulation Of Trees

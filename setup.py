@@ -11,9 +11,9 @@ setup(
     description="simple manipulation of trees",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/arendsee/smot",
+    url="https://github.com/flu-crew/smot",
     author="Zebulun Arendsee",
-    author_email="zbwrnz@gmail.com",
+    author_email="zebulun.arendsee@usda.gov",
     packages=["smot"],
     classifiers=[
         "Programming Language :: Python :: 3",
