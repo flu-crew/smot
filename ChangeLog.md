@@ -1,3 +1,10 @@
+0.4.0 [2020-08-06]
+
+ * update CLI interface
+   - subcommand documentation
+   - documentation for each field
+   - cleaner argument checking
+
 0.3.0 [2019-12-04]
 
  * allow automatic reading of NEXUS
