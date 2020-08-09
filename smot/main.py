@@ -90,23 +90,20 @@ def factorTree(tree, factor_by_field, factor_by_capture, factor_by_table, defaul
 
 def read_tree(treefile):
     from smot.parser import p_tree
-
-    if treefile:
-        f = treefile
-    else:
-        f = sys.stdin
-
-    rawtree = f.readlines()
+    rawtree = treefile.readlines()
     rawtree = "\n".join(rawtree).strip()
     tree = p_tree.parse(rawtree)
     return tree
+
+
+dec_tree = click.argument("TREE", default=sys.stdin, type=click.File())
 
 
 #      smot convert --from=<from> --to=<to> [<filename>]
 @click.command(help="Convert between tree formats.")
 @click.option("--from", "opt_from", type=str, help="input tree format")
 @click.option("--to", "opt_to", type=str, help="output tree format")
-@click.argument("TREE", type=click.File())
+@dec_tree
 def convert(opt_from, opt_to, tree):
     from Bio import Phylo
     Phylo.convert(tree, opt_from, sys.stdout, opt_to)
@@ -114,7 +111,7 @@ def convert(opt_from, opt_to, tree):
 
 #      smot tips [<filename>]
 @click.command(help="Print the tree tip labels")
-@click.argument("TREE", type=click.File())
+@dec_tree
 def tips(tree):
     import smot.algorithm as alg
 
@@ -132,7 +129,7 @@ def tips(tree):
 
 #      smot plot [<filename>]
 @click.command(help="Build a simple tree plot")
-@click.argument("TREE", type=click.File())
+@dec_tree
 def plot(tree):
     from Bio import Phylo
     tree = read_tree(tree)
@@ -198,7 +195,7 @@ dec_keep = click.option("-k", "--keep", default=[], type=ListOfStrings, help="Fa
 )
 @dec_max_tips
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
-@click.argument("TREE", type=click.File())
+@dec_tree
 def equal(
     factor_by_capture,
     factor_by_field,
@@ -234,7 +231,7 @@ def equal(
 @dec_proportion
 @dec_seed
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
-@click.argument("TREE", type=click.File())
+@dec_tree
 def prop(
     factor_by_capture,
     factor_by_field,
@@ -275,7 +272,7 @@ def prop(
 @dec_proportion
 @dec_seed
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
-@click.argument("TREE", type=click.File())
+@dec_tree
 def para(
     factor_by_capture,
     factor_by_field,
@@ -315,7 +312,7 @@ def para(
     "--default", type=str, default=None, help="The name to assign to tips that do not match a factor"
 )
 @click.option("--impute", is_flag=True, default=False, help="Infer the factor from context, if possible")
-@click.argument("TREE", type=click.File())
+@dec_tree
 def factor(
     method, factor_by_capture, factor_by_field, factor_by_table, default, impute, tree
 ):
@@ -370,7 +367,7 @@ def factor(
 @click.command(help="Search and replace patterns in tip labels")
 @click.argument("PATTERN", type=str)
 @click.argument("REPLACEMENT", type=str)
-@click.argument("TREE", type=click.File())
+@dec_tree
 def tipsed(pattern, replacement, tree):
     import smot.algorithm as alg
     import re
@@ -387,39 +384,25 @@ def tipsed(pattern, replacement, tree):
     print(tree.newick())
 
 
-#      smot midpoint [<filename>]
-@click.command(help="Root a tree at the midpoint (disgustingly slow)")
-@click.argument("TREE", type=click.File())
-def midpoint(tree):
-    from Bio import Phylo
-
-    tree = read_tree(tree)
-    btree = Phylo.BaseTree.Tree.from_clade(tree.asBiopythonTree())
-    btree.root_at_midpoint()
-    Phylo.write(btree.clade, file=sys.stdout, format="newick")
-
-
 @click.command(help="Generate a random tree from a file of labels")
 @dec_seed
-@click.argument("tipnames", type=click.File())
+@click.argument("TIPNAMES", default=sys.stdin, type=click.File())
 def random(seed, tipnames):
     from Bio import Phylo
     import random
 
-    if tipnames:
-        names = [name.strip() for name in tipnames.readlines()]
-    else:
-        names = [name.strip() for name in sys.stdin]
+    names = [name.strip() for name in tipnames.readlines()]
     random.seed(seed)
     btree = Phylo.BaseTree.Tree.randomized(names)
     Phylo.write(btree, file=sys.stdout, format="newick")
+
 
 
 #      smot clean [<filename>]
 @click.command(
     help="Clean and sort the tree. Nodes with single children are removed. Branch lengths are added (defaulting to 0). The tree is sorted (the topology is NOT changed and no root is added)."
 )
-@click.argument("TREE", type=click.File())
+@dec_tree
 def clean(tree):
     from Bio import Phylo
     import smot.algorithm as alg
@@ -457,7 +440,6 @@ cli.add_command(plot)
 cli.add_command(sample)
 cli.add_command(factor)
 cli.add_command(tipsed)
-cli.add_command(midpoint)
 cli.add_command(random)
 cli.add_command(clean)
 

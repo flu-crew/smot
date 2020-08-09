@@ -1,3 +1,9 @@
+0.5.0 [2020-08-09]
+
+ * remove midpoint command - it was too slow to be useful, there are better CLI
+   tools for this job
+ * Fix bug preventing STDIN
+
 0.4.0 [2020-08-06]
 
  * update CLI interface
