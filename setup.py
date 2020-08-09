@@ -21,6 +21,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     entry_points={"console_scripts": ["smot=smot.main:main"]},
+    installation_requires={"click"},
     py_modules=["smot"],
     zip_safe=False,
 )
