@@ -69,7 +69,13 @@ class ListOfStringsType(click.ParamType):
 ListOfStrings = ListOfStringsType()
 
 
-def factorTree(tree, factor_by_field, factor_by_capture, factor_by_table, default=None):
+def factorTree(
+  tree,
+  factor_by_capture=None,
+  factor_by_field=None,
+  factor_by_table=None,
+  default=None
+):
     import smot.algorithm as alg
 
     if factor_by_field is not None:
@@ -210,8 +216,8 @@ def equal(
     tree = read_tree(tree)
     tree = factorTree(
         tree=tree,
-        factor_by_field=factor_by_field,
         factor_by_capture=factor_by_capture,
+        factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
     )
@@ -249,8 +255,8 @@ def prop(
     tree = read_tree(tree)
     tree = factorTree(
         tree=tree,
-        factor_by_field=factor_by_field,
         factor_by_capture=factor_by_capture,
+        factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
     )
@@ -290,8 +296,8 @@ def para(
     tree = read_tree(tree)
     tree = factorTree(
         tree=tree,
-        factor_by_field=factor_by_field,
         factor_by_capture=factor_by_capture,
+        factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
     )
@@ -321,8 +327,8 @@ def factor(
     tree = read_tree(tree)
     tree = factorTree(
         tree=tree,
-        factor_by_field=factor_by_field,
         factor_by_capture=factor_by_capture,
+        factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
     )
