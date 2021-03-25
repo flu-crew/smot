@@ -3,8 +3,10 @@ import click
 import os
 import signal
 import sys
+from smot.util import die
 
-INT_SENTINEL=9999
+INT_SENTINEL = 9999
+
 
 class MaybeStringType(click.ParamType):
     name = "?str"
@@ -18,13 +20,14 @@ class MaybeStringType(click.ParamType):
             return str(value)
         except TypeError:
             self.fail(
-                "expected a string, got "
-                f"{value!r} of type {type(value).__name__}",
+                "expected a string, got " f"{value!r} of type {type(value).__name__}",
                 param,
                 ctx,
             )
 
+
 MaybeString = MaybeStringType()
+
 
 class MaybeNatType(click.ParamType):
     name = "?nat"
@@ -38,8 +41,7 @@ class MaybeNatType(click.ParamType):
             value = int(value)
         except TypeError:
             self.fail(
-                "expected a int, got "
-                f"{value!r} of type {type(value).__name__}",
+                "expected a int, got " f"{value!r} of type {type(value).__name__}",
                 param,
                 ctx,
             )
@@ -47,7 +49,9 @@ class MaybeNatType(click.ParamType):
             self.fail(f"expected an integer greater than 1, got {value}")
         return value
 
+
 MaybeNat = MaybeNatType()
+
 
 class ListOfStringsType(click.ParamType):
     name = "[str]"
@@ -66,15 +70,16 @@ class ListOfStringsType(click.ParamType):
                 ctx,
             )
 
+
 ListOfStrings = ListOfStringsType()
 
 
 def factorTree(
-  tree,
-  factor_by_capture=None,
-  factor_by_field=None,
-  factor_by_table=None,
-  default=None
+    tree,
+    factor_by_capture=None,
+    factor_by_field=None,
+    factor_by_table=None,
+    default=None,
 ):
     import smot.algorithm as alg
 
@@ -96,6 +101,7 @@ def factorTree(
 
 def read_tree(treefile):
     from smot.parser import p_tree
+
     rawtree = treefile.readlines()
     rawtree = "\n".join(rawtree).strip()
     tree = p_tree.parse(rawtree)
@@ -112,6 +118,7 @@ dec_tree = click.argument("TREE", default=sys.stdin, type=click.File())
 @dec_tree
 def convert(opt_from, opt_to, tree):
     from Bio import Phylo
+
     Phylo.convert(tree, opt_from, sys.stdout, opt_to)
 
 
@@ -138,6 +145,7 @@ def tips(tree):
 @dec_tree
 def plot(tree):
     from Bio import Phylo
+
     tree = read_tree(tree)
     btree = Phylo.BaseTree.Tree.from_clade(tree.asBiopythonTree())
     btree.ladderize(reverse=True)
@@ -145,25 +153,24 @@ def plot(tree):
 
 
 def factoring(function):
-  function = click.option(
-      "--factor-by-capture",
-      type=MaybeString,
-      help="A regular expression with a capture for determining factors from labels",
-  )(function)
+    function = click.option(
+        "--factor-by-capture",
+        type=MaybeString,
+        help="A regular expression with a capture for determining factors from labels",
+    )(function)
 
-  function = click.option(
-      "--factor-by-field",
-      type=MaybeNat,
-      default=INT_SENTINEL,
-      help="Factor by 1-based field index (with '|' delimiters, for now)",
-  )(function)
+    function = click.option(
+        "--factor-by-field",
+        type=MaybeNat,
+        default=INT_SENTINEL,
+        help="Factor by 1-based field index (with '|' delimiters, for now)",
+    )(function)
 
-  function = click.option(
-      "--factor-by-table", type=MaybeString, help="I don't even know what this is"
-  )(function)
+    function = click.option(
+        "--factor-by-table", type=MaybeString, help="I don't even know what this is"
+    )(function)
 
-  return(function)
-
+    return function
 
 
 dec_proportion = click.option(
@@ -171,6 +178,13 @@ dec_proportion = click.option(
     "--proportion",
     type=click.FloatRange(min=0, max=1),
     help="The proportion of tips in a clade to keep",
+)
+
+dec_scale = click.option(
+    "-s",
+    "--scale",
+    type=click.FloatRange(min=0, max=1),
+    help="Scale the size of the clade to this power (if there are n tips in a group, it will scale down to n^r)",
 )
 
 dec_max_tips = click.option(
@@ -189,7 +203,10 @@ dec_min_tips = click.option(
 
 dec_seed = click.option("--seed", type=click.IntRange(min=1), help="Random seed")
 
-dec_keep = click.option("-k", "--keep", default=[], type=ListOfStrings, help="Factors to keep")
+dec_keep = click.option(
+    "-k", "--keep", default=[], type=ListOfStrings, help="Factors to keep"
+)
+
 
 @click.command(
     help="Equal sampling. Descend from root to tip. At each node, determine if each subtree contains a single factor. If a subtree is not monophyletic, recurse into the subtree. If the subtree is monophyletic, then select up to N tips (from the --max-tips argument) from the subtree. The selection of tips is deterministic but dependent on the ordering of leaves. To sample a subtree, an equal number of tips is sampled from each descendent subtree, and so on recursively down to the tips. The resulting downsampled subtree captures the depth of the tree, but is not representative of the tree's breadth. That is, if N=6 and a tree splits into two subtrees, one with 3 tips and one with 300 tips, still 3 tips will be sampled from each branch."
@@ -213,6 +230,7 @@ def equal(
     tree,
 ):
     import smot.algorithm as alg
+
     tree = read_tree(tree)
     tree = factorTree(
         tree=tree,
@@ -235,6 +253,7 @@ def equal(
 )
 @dec_min_tips
 @dec_proportion
+@dec_scale
 @dec_seed
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_tree
@@ -246,11 +265,15 @@ def prop(
     default,
     min_tips,
     proportion,
+    scale,
     seed,
     zero,
     tree,
 ):
     import smot.algorithm as alg
+
+    if not proportion and not scale:
+        die("Please add either a --proportion or --scale option")
 
     tree = read_tree(tree)
     tree = factorTree(
@@ -261,7 +284,7 @@ def prop(
         default=default,
     )
     tree = alg.sampleProportional(
-        tree, keep=keep, proportion=proportion, minTips=min_tips, seed=seed
+        tree, keep=keep, proportion=proportion, scale=scale, minTips=min_tips, seed=seed
     )
     print(tree.newick())
 
@@ -276,6 +299,7 @@ def prop(
 )
 @dec_min_tips
 @dec_proportion
+@dec_scale
 @dec_seed
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_tree
@@ -287,11 +311,15 @@ def para(
     default,
     min_tips,
     proportion,
+    scale,
     seed,
     zero,
     tree,
 ):
     import smot.algorithm as alg
+
+    if not proportion and not scale:
+        die("Please add either a --proportion or --scale option")
 
     tree = read_tree(tree)
     tree = factorTree(
@@ -302,7 +330,7 @@ def para(
         default=default,
     )
     tree = alg.sampleParaphyletic(
-        tree, keep=keep, proportion=proportion, minTips=min_tips, seed=seed
+        tree, keep=keep, proportion=proportion, scale=scale, minTips=min_tips, seed=seed
     )
     print(tree.newick())
 
@@ -315,9 +343,17 @@ def para(
 )
 @factoring
 @click.option(
-    "--default", type=str, default=None, help="The name to assign to tips that do not match a factor"
+    "--default",
+    type=str,
+    default=None,
+    help="The name to assign to tips that do not match a factor",
 )
-@click.option("--impute", is_flag=True, default=False, help="Infer the factor from context, if possible")
+@click.option(
+    "--impute",
+    is_flag=True,
+    default=False,
+    help="Infer the factor from context, if possible",
+)
 @dec_tree
 def factor(
     method, factor_by_capture, factor_by_field, factor_by_table, default, impute, tree
@@ -401,7 +437,6 @@ def random(seed, tipnames):
     random.seed(seed)
     btree = Phylo.BaseTree.Tree.randomized(names)
     Phylo.write(btree, file=sys.stdout, format="newick")
-
 
 
 #      smot clean [<filename>]

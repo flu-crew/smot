@@ -198,7 +198,7 @@ def sampleN(node, n):
 
 def sampleRandom(node, n, rng):
     """
-    Sample N random tips from node 
+    Sample N random tips from node
     """
     if not node.data.nleafs:
         node = setNLeafs(node)
@@ -330,8 +330,20 @@ def sampleContext(tree, keep=[], maxTips=5):
     return clean(_sampleContext(tree))
 
 
-def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
+def sampleParaphyletic(
+    tree, proportion=None, scale=None, keep=[], minTips=3, seed=None
+):
     rng = random.Random(seed)
+
+    if proportion:
+
+        def _sample(labels):
+            return min(len(labels), max(minTips, math.ceil(proportion * len(labels))))
+
+    else:
+
+        def _sample(labels):
+            return min(len(labels), max(minTips, math.ceil(len(labels) ** scale)))
 
     def getLabels(node):
         def _collect(b, d):
@@ -345,7 +357,7 @@ def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
         if factor in keep:
             return labels
         else:
-            N = min(len(labels), max(minTips, math.ceil(proportion * len(labels))))
+            N = _sample(labels)
             try:
                 sample = rng.sample(sorted(list(labels)), N)
             except ValueError:
@@ -423,12 +435,22 @@ def sampleParaphyletic(tree, proportion=0.5, keep=[], minTips=3, seed=None):
     return sampledTree
 
 
-def sampleProportional(tree, proportion=0.5, keep=[], minTips=3, seed=None):
+def sampleProportional(
+    tree, proportion=None, scale=None, keep=[], minTips=3, seed=None
+):
     rng = random.Random(seed)
 
-    def _sample(kid):
-        N = max(minTips, math.floor(kid.data.nleafs * proportion))
-        return sampleRandom(kid, N, rng=rng)
+    if proportion:
+
+        def _sample(kid):
+            N = max(minTips, math.floor(kid.data.nleafs * proportion))
+            return sampleRandom(kid, N, rng=rng)
+
+    else:
+
+        def _sample(kid):
+            N = max(minTips, math.floor(kid.data.nleafs ** scale))
+            return sampleRandom(kid, N, rng=rng)
 
     # recursive sampler
     def _sampleProportional(node):
@@ -447,10 +469,6 @@ def sampleProportional(tree, proportion=0.5, keep=[], minTips=3, seed=None):
         node.kids = newkids
         return node
 
-    if not (0 <= proportion <= 1):
-        die("Expected parameter 'proportion' to be a number between 0 and 1")
-    if not (0 <= minTips and minTips % 1 == 0):
-        die("Expected parameter 'minTips' to be a positive integer")
     tree = setNLeafs(tree)
     tree = setFactorCounts(tree)
     return clean(_sampleProportional(tree))

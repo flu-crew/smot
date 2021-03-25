@@ -1,10 +1,16 @@
+0.6.0 [2021-03-xx]
+
+ * add power scaling option to samplers
+
 0.5.0 [2020-08-09]
+------------------
 
  * remove midpoint command - it was too slow to be useful, there are better CLI
    tools for this job
  * Fix bug preventing STDIN
 
 0.4.0 [2020-08-06]
+------------------
 
  * update CLI interface
    - subcommand documentation
@@ -12,6 +18,7 @@
    - cleaner argument checking
 
 0.3.0 [2019-12-04]
+------------------
 
  * allow automatic reading of NEXUS
  * remove '--format' option (infer input format and write newick)
@@ -22,6 +29,7 @@
  * `clean` command also ladderizes the tree 
 
 0.2.0 [2019-11-20]
+------------------
 
  * add factor imputing
  * add `--seed` argument to `smot random`
@@ -31,5 +39,6 @@
  * allow the default factor
 
 0.1.0 [2019-11-19]
+------------------
 
  * initial release
