@@ -19,7 +19,7 @@ all:
 	# this should randomly sample 15 taxa of th 1591 that are in H1.tre
 	smot sample prop --proportion=0.01 --min-tips=3 --seed=42 H1.tre | smot tips > .obs-h1-hundreth-sample-prop.txt
 	diff .obs-h1-hundreth-sample-prop.txt .exp-h1-hundreth-sample-prop.txt
-	# this should proportionally sample while retaining all global clades and unknowns representatives 
+	# this should proportionally sample while retaining all global clades and unknowns representatives
 	smot sample prop --proportion=0.01 --min-tips=3 --factor-by-capture='(1[ABC]\.[0-9.]*)' --seed=42 H1.tre > .obs-h1-factored-prop.tre
 	diff .obs-h1-factored-prop.tre .exp-h1-factored-prop.tre
 	# set default factor to NA, then list
@@ -35,12 +35,16 @@ all:
 	smot tips H1.nexus > b
 	diff a b
 	# test grep on 1B.tre
-	smot grep "Spain" 1B.tre | smot tips > a
-	smot tips 1B.tre | grep "Spain" > b
+	smot grep "|1B.1.2|" 1B.tre | smot tips > a
+	smot tips 1B.tre | grep "|1B.1.2|" > b
 	diff a b
 	# test reverse grep
-	smot grep -v "Spain" 1B.tre | smot tips > a
-	smot tips 1B.tre | grep -v "Spain" > b
+	smot grep -v "|1B.1.2|" 1B.tre | smot tips > a
+	smot tips 1B.tre | grep -v "|1B.1.2|" > b
+	diff a b
+	# test regex grep
+	smot grep -P "(1B.1.2\\||1B.1.2.1)" 1B.tre | smot tips > a
+	smot tips 1B.tre | grep -E "(1B.1.2\\||1B.1.2.1)" > b
 	diff a b
 	# clean up
 	rm a b

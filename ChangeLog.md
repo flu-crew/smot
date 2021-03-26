@@ -1,6 +1,7 @@
 0.6.0 [2021-03-xx]
 
  * add power scaling option to samplers
+ * add grep
 
 0.5.0 [2020-08-09]
 ------------------

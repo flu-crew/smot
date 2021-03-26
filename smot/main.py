@@ -428,19 +428,26 @@ def tipsed(pattern, replacement, tree):
 @click.command(help="Prune a tree to preserve only the tips with that match a pattern")
 @click.argument("PATTERN", type=str)
 @click.option("-v", "--invert-match", is_flag=True, help="Keep all leafs NOT matching the pattern")
+@click.option("-P", "--perl", is_flag=True, help="Interpret the pattern as a regular expression")
 @dec_tree
-def grep(pattern, tree, invert_match):
+def grep(pattern, tree, invert_match, perl):
   import smot.algorithm as alg
   import re
 
-  pat = re.compile(pattern)
-
-  if invert_match:
-    def fun_(node):
-      return [kid for kid in node.kids if (not kid.data.isLeaf or not re.search(pat, kid.data.label))]
+  if perl:
+    regex = re.compile(pattern)
+    if invert_match:
+      matcher = lambda s: not re.search(regex, s)
+    else:
+      matcher = lambda s: re.search(regex, s)
   else:
-    def fun_(node):
-      return [kid for kid in node.kids if (not kid.data.isLeaf or re.search(pat, kid.data.label))]
+    if invert_match:
+      matcher = lambda s: not pattern in s
+    else:
+      matcher = lambda s: pattern in s
+
+  def fun_(node):
+    return [kid for kid in node.kids if (not kid.data.isLeaf or matcher(kid.data.label))]
 
   tree = read_tree(tree)
   tree = alg.treecut(tree, fun_)
