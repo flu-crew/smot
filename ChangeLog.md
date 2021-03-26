@@ -1,4 +1,9 @@
-0.7.0 [2021-03-xx]
+0.7.1 [2021-03-26]
+------------------
+
+ * remove debugging crap
+
+0.7.0 [2021-03-26]
 ------------------
 
  * allow factor imputation through patristic distance 

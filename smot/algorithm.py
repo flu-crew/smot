@@ -222,7 +222,7 @@ def imputePatristicFactors(tree):
 
     def leaf_fun_(d):
       if d.factorDist:
-        d.factor = sorted(d.factorDist.items(), key=lambda x: x[1])
+        d.factor = sorted(d.factorDist.items(), key=lambda x: x[1])[0][0]
       return d
 
     # pull the distances from child labels up to root
