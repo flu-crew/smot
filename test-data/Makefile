@@ -34,4 +34,13 @@ all:
 	smot tips H1.tre > a
 	smot tips H1.nexus > b
 	diff a b
+	# test grep on 1B.tre
+	smot grep "Spain" 1B.tre | smot tips > a
+	smot tips 1B.tre | grep "Spain" > b
+	diff a b
+	# test reverse grep
+	smot grep -v "Spain" 1B.tre | smot tips > a
+	smot tips 1B.tre | grep -v "Spain" > b
+	diff a b
+	# clean up
 	rm a b

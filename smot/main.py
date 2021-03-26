@@ -425,6 +425,27 @@ def tipsed(pattern, replacement, tree):
     tree = alg.treemap(tree, fun_)
     print(tree.newick())
 
+@click.command(help="Prune a tree to preserve only the tips with that match a pattern")
+@click.argument("PATTERN", type=str)
+@click.option("-v", "--invert-match", is_flag=True, help="Keep all leafs NOT matching the pattern")
+@dec_tree
+def grep(pattern, tree, invert_match):
+  import smot.algorithm as alg
+  import re
+
+  pat = re.compile(pattern)
+
+  if invert_match:
+    def fun_(node):
+      return [kid for kid in node.kids if (not kid.data.isLeaf or not re.search(pat, kid.data.label))]
+  else:
+    def fun_(node):
+      return [kid for kid in node.kids if (not kid.data.isLeaf or re.search(pat, kid.data.label))]
+
+  tree = read_tree(tree)
+  tree = alg.treecut(tree, fun_)
+  tree = alg.clean(tree)
+  print(tree.newick())
 
 @click.command(help="Generate a random tree from a file of labels")
 @dec_seed
@@ -481,6 +502,7 @@ cli.add_command(plot)
 cli.add_command(sample)
 cli.add_command(factor)
 cli.add_command(tipsed)
+cli.add_command(grep)
 cli.add_command(random)
 cli.add_command(clean)
 
