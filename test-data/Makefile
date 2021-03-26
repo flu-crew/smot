@@ -46,5 +46,9 @@ all:
 	smot grep -P "(1B.1.2\\||1B.1.2.1)" 1B.tre | smot tips > a
 	smot tips 1B.tre | grep -E "(1B.1.2\\||1B.1.2.1)" > b
 	diff a b
+	# test file grep
+	smot grep -f patterns 1B.tre | smot tips > a
+	smot tips 1B.tre | grep -f patterns > b
+	diff a b
 	# clean up
 	rm a b

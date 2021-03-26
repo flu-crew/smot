@@ -429,12 +429,17 @@ def tipsed(pattern, replacement, tree):
 @click.argument("PATTERN", type=str)
 @click.option("-v", "--invert-match", is_flag=True, help="Keep all leafs NOT matching the pattern")
 @click.option("-P", "--perl", is_flag=True, help="Interpret the pattern as a regular expression")
+@click.option("-f", "--file", is_flag=True, help="Read patterns from a file instead of a set string")
 @dec_tree
-def grep(pattern, tree, invert_match, perl):
+def grep(pattern, tree, invert_match, perl, file):
   import smot.algorithm as alg
   import re
 
-  if perl:
+  if file:
+      with open(pattern, "r") as f:
+        patterns = [p.strip() for p in f.readlines()]
+        matcher = lambda s: any([p in s for p in patterns])
+  elif perl:
     regex = re.compile(pattern)
     if invert_match:
       matcher = lambda s: not re.search(regex, s)
