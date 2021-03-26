@@ -30,6 +30,12 @@ all:
 	smot factor append --default=NA fishbone.tre > .obs-factor-append-default.txt
 	diff .exp-factor-append-default.txt .obs-factor-append-default.txt
 	rm .obs-*
+	# test patristic factorizer
+	smot factor table --patristic --factor-by-capture="(H|S)" partial-fishbone-1.tre > .obs-para-impute-1
+	diff .obs-para-impute-1 .exp-para-impute-1
+	#
+	smot factor table --patristic --factor-by-capture="(H|S)" partial-fishbone-2.tre > .obs-para-impute-2
+	diff .obs-para-impute-2 .exp-para-impute-2
 	# test parsing of newich and nexus files
 	smot tips H1.tre > a
 	smot tips H1.nexus > b

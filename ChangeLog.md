@@ -1,4 +1,10 @@
-0.6.0 [2021-03-xx]
+0.7.0 [2021-03-xx]
+------------------
+
+ * allow factor imputation through patristic distance 
+
+0.6.0 [2021-03-26]
+------------------
 
  * add power scaling option to samplers
  * add grep

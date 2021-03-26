@@ -37,6 +37,35 @@ def treecut(node, fun, **kwargs):
     node.kids = [treecut(kid, fun, **kwargs) for kid in node.kids]
     return node
 
+def treepull(node, fun, **kwargs):
+    """
+    Change parent based on children
+
+    Can alter leafs, since they are treated as nodes without children.
+
+    fun :: NodeData -> [NodeData] -> NodeData
+    """
+    if node.data.isLeaf:
+        node.data = fun(node.data, [])
+    else:
+        node.kids = [treepull(kid, fun, **kwargs) for kid in node.kids]
+        node.data = fun(node.data, [kid.data for kid in node.kids], **kwargs)
+    return node
+
+def treepush(node, fun, **kwargs):
+    """
+    Change children based on parent
+
+    fun :: NodeData -> NodeData -> NodeData
+    """
+
+    if not node.data.isLeaf:
+      for kid in node.kids:
+        kid.data = fun(node.data, kid.data, **kwargs)
+      node.kids = [treepush(kid, fun, **kwargs) for kid in node.kids] 
+
+    return node
+
 
 def clean(tree, isRoot=True):
     """
@@ -164,6 +193,47 @@ def imputeFactors(tree):
     else:
         newkids = [imputeFactors(kid) for kid in tree.kids]
         tree.kids = newkids
+    return tree
+
+
+def imputePatristicFactors(tree):
+
+    def kid_fun_(d, ds):
+      d.factorDist = dict()
+      if d.isLeaf and d.factor:
+        d.factorDist[d.factor] = 0
+      else:
+        for kid_data in ds:
+          for (label, dist) in kid_data.factorDist.items():
+            pdist = dist + kid_data.length
+            if label in d.factorDist:
+              d.factorDist[label] = min(pdist, d.factorDist[label])
+            else:
+              d.factorDist[label] = pdist
+      return d
+
+    def parent_fun_(p, k):
+      for (label, dist) in p.factorDist.items():
+        if label in k.factorDist:
+          k.factorDist[label] = min(k.factorDist[label], dist + k.length)
+        else:
+          k.factorDist[label] = k.length + dist
+      return k
+
+    def leaf_fun_(d):
+      if d.factorDist:
+        d.factor = sorted(d.factorDist.items(), key=lambda x: x[1])
+      return d
+
+    # pull the distances from child labels up to root
+    tree = treepull(tree, kid_fun_)
+
+    # push the distances from root down to leafs
+    tree = treepush(tree, parent_fun_)
+
+    # set factors to the nearest factor
+    tree = treemap(tree, leaf_fun_)
+
     return tree
 
 
@@ -300,7 +370,6 @@ def setFactorCounts(node):
     else:
         node.data.factorCount = Counter()
         node.kids = [setFactorCounts(kid) for kid in node.kids]
-        node.data.factorCounts = Counter()
         for kid in node.kids:
             node.data.factorCount += kid.data.factorCount
 

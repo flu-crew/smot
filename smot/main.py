@@ -352,11 +352,24 @@ def para(
     "--impute",
     is_flag=True,
     default=False,
-    help="Infer the factor from context, if possible",
+    help="Infer the monophyletic factor from context, if possible",
+)
+@click.option(
+    "--patristic",
+    is_flag=True,
+    default=False,
+    help="Infer factors by distance on the tree to the nearest label",
 )
 @dec_tree
 def factor(
-    method, factor_by_capture, factor_by_field, factor_by_table, default, impute, tree
+    method,
+    factor_by_capture,
+    factor_by_field,
+    factor_by_table,
+    default,
+    impute,
+    patristic,
+    tree,
 ):
     import smot.algorithm as alg
 
@@ -369,7 +382,9 @@ def factor(
         default=default,
     )
 
-    if impute:
+    if patristic:
+        tree = alg.imputePatristicFactors(tree)
+    elif impute:
         tree = alg.imputeFactors(tree)
 
     # create TAB-delimited, table with columns for the tip labels and the
@@ -425,39 +440,52 @@ def tipsed(pattern, replacement, tree):
     tree = alg.treemap(tree, fun_)
     print(tree.newick())
 
+
 @click.command(help="Prune a tree to preserve only the tips with that match a pattern")
 @click.argument("PATTERN", type=str)
-@click.option("-v", "--invert-match", is_flag=True, help="Keep all leafs NOT matching the pattern")
-@click.option("-P", "--perl", is_flag=True, help="Interpret the pattern as a regular expression")
-@click.option("-f", "--file", is_flag=True, help="Read patterns from a file instead of a set string")
+@click.option(
+    "-v", "--invert-match", is_flag=True, help="Keep all leafs NOT matching the pattern"
+)
+@click.option(
+    "-P", "--perl", is_flag=True, help="Interpret the pattern as a regular expression"
+)
+@click.option(
+    "-f",
+    "--file",
+    is_flag=True,
+    help="Read patterns from a file instead of a set string",
+)
 @dec_tree
 def grep(pattern, tree, invert_match, perl, file):
-  import smot.algorithm as alg
-  import re
+    import smot.algorithm as alg
+    import re
 
-  if file:
-      with open(pattern, "r") as f:
-        patterns = [p.strip() for p in f.readlines()]
-        matcher = lambda s: any([p in s for p in patterns])
-  elif perl:
-    regex = re.compile(pattern)
-    if invert_match:
-      matcher = lambda s: not re.search(regex, s)
+    if file:
+        with open(pattern, "r") as f:
+            patterns = [p.strip() for p in f.readlines()]
+            matcher = lambda s: any([p in s for p in patterns])
+    elif perl:
+        regex = re.compile(pattern)
+        if invert_match:
+            matcher = lambda s: not re.search(regex, s)
+        else:
+            matcher = lambda s: re.search(regex, s)
     else:
-      matcher = lambda s: re.search(regex, s)
-  else:
-    if invert_match:
-      matcher = lambda s: not pattern in s
-    else:
-      matcher = lambda s: pattern in s
+        if invert_match:
+            matcher = lambda s: not pattern in s
+        else:
+            matcher = lambda s: pattern in s
 
-  def fun_(node):
-    return [kid for kid in node.kids if (not kid.data.isLeaf or matcher(kid.data.label))]
+    def fun_(node):
+        return [
+            kid for kid in node.kids if (not kid.data.isLeaf or matcher(kid.data.label))
+        ]
 
-  tree = read_tree(tree)
-  tree = alg.treecut(tree, fun_)
-  tree = alg.clean(tree)
-  print(tree.newick())
+    tree = read_tree(tree)
+    tree = alg.treecut(tree, fun_)
+    tree = alg.clean(tree)
+    print(tree.newick())
+
 
 @click.command(help="Generate a random tree from a file of labels")
 @dec_seed

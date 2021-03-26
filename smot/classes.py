@@ -10,6 +10,7 @@ class NodeData:
         self.factor = factor
         self.nleafs = None
         self.factorCount = None
+        self.factorDist = dict()
         self.color = None
         self.isLeaf = isLeaf
 
