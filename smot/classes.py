@@ -11,13 +11,16 @@ class NodeData:
         self.nleafs = None
         self.factorCount = None
         self.factorDist = dict()
-        self.color = None
+        self.color = self._color()
         self.isLeaf = isLeaf
 
     def _color(self):
-        m = re.match("&!color=(#\d{6})")
-        if m:
-            self.color = m.groups(1)
+        color = None
+        if self.label:
+          m = re.search("&!color=(#\d{6})", self.label)
+          if m:
+              color = m.groups()[0]
+        return color
 
     def __eq__(self, other):
         # Equality is based off intrinsic data of the tree, not internal data,
@@ -57,19 +60,17 @@ class Node:
         else:
             s = ""
         if self.data.label:
-            #  s += "x" + str(Node.index)
-            #  Node.index += 1
-            if set("^,:;()[]'\"").intersection(set(self.data.label)):
-                if "'" in self.data.label:
-                    if '"' in self.data.label:
-                        label = re.sub('"', '\\"', self.data.label)
-                        s += f'"{label}"'
-                    else:
-                        s += f'"{self.data.label}"'
-                elif '"' in self.data.label:
-                    s += f"'{self.data.label}'"
-            else:
-                s += self.data.label
+            label = self.data.label
+            if self.data.form or set("^,:;()[]'\"").intersection(set(label)):
+                if "'" in label:
+                    # escape any double quotes
+                    label = re.sub('"', '\\"', label)
+                    # double quote the expression
+                    label = f'"{label}"'
+                else:
+                    # if there are no internal single quotes, single quote everything
+                    label = f"'{label}'"
+            s += label
         if self.data.form:
             s += "[" + self.data.form + "]"
         if self.data.length is not None:
