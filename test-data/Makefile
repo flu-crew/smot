@@ -58,3 +58,7 @@ all:
 	diff a b
 	# clean up
 	rm a b
+	# para with keep-regex
+	smot sample para --min-tips=3 -p 0.1 --seed 42 --keep-regex="(CVV|variant|accine|eference|Consensus)" --factor-by-capture="(1B[^|]*|Other-Human[^|]*)" 1B.tre > a
+	diff a .1B-para-keep.tre
+	rm a

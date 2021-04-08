@@ -207,6 +207,10 @@ dec_keep = click.option(
     "-k", "--keep", default=[], type=ListOfStrings, help="Factors to keep"
 )
 
+dec_keep_regex = click.option(
+    "-r", "--keep-regex", default="", type=str, help="Keep all tips that match this pattern, these tips do not count towards downsampling quotas."
+)
+
 
 @click.command(
     help="Equal sampling. Descend from root to tip. At each node, determine if each subtree contains a single factor. If a subtree is not monophyletic, recurse into the subtree. If the subtree is monophyletic, then select up to N tips (from the --max-tips argument) from the subtree. The selection of tips is deterministic but dependent on the ordering of leaves. To sample a subtree, an equal number of tips is sampled from each descendent subtree, and so on recursively down to the tips. The resulting downsampled subtree captures the depth of the tree, but is not representative of the tree's breadth. That is, if N=6 and a tree splits into two subtrees, one with 3 tips and one with 300 tips, still 3 tips will be sampled from each branch."
@@ -248,6 +252,7 @@ def equal(
 )
 @factoring
 @dec_keep
+@dec_keep_regex
 @click.option(
     "--default", type=str, help="The name to assign to tips that do not match a factor"
 )
@@ -262,6 +267,7 @@ def prop(
     factor_by_field,
     factor_by_table,
     keep,
+    keep_regex,
     default,
     min_tips,
     proportion,
@@ -284,7 +290,7 @@ def prop(
         default=default,
     )
     tree = alg.sampleProportional(
-        tree, keep=keep, proportion=proportion, scale=scale, minTips=min_tips, seed=seed
+        tree, keep=keep, keep_regex=keep_regex, proportion=proportion, scale=scale, minTips=min_tips, seed=seed
     )
     print(tree.newick())
 
@@ -294,6 +300,7 @@ def prop(
 )
 @factoring
 @dec_keep
+@dec_keep_regex
 @click.option(
     "--default", type=str, help="The name to assign to tips that do not match a factor"
 )
@@ -308,6 +315,7 @@ def para(
     factor_by_field,
     factor_by_table,
     keep,
+    keep_regex,
     default,
     min_tips,
     proportion,
@@ -330,7 +338,7 @@ def para(
         default=default,
     )
     tree = alg.sampleParaphyletic(
-        tree, keep=keep, proportion=proportion, scale=scale, minTips=min_tips, seed=seed
+        tree, keep=keep, keep_regex=keep_regex, proportion=proportion, scale=scale, minTips=min_tips, seed=seed
     )
     print(tree.newick())
 

@@ -66,6 +66,15 @@ def treepush(node, fun, **kwargs):
 
     return node
 
+def partition(xs, f):
+  a = []
+  b = []
+  for x in xs:
+    if f(x):
+      a.append(x)
+    else:
+      b.append(x)
+  return (a,b)
 
 def clean(tree, isRoot=True):
     """
@@ -400,7 +409,7 @@ def sampleContext(tree, keep=[], maxTips=5):
 
 
 def sampleParaphyletic(
-    tree, proportion=None, scale=None, keep=[], minTips=3, seed=None
+    tree, proportion=None, scale=None, keep=[], keep_regex="", minTips=3, seed=None
 ):
     rng = random.Random(seed)
 
@@ -426,13 +435,17 @@ def sampleParaphyletic(
         if factor in keep:
             return labels
         else:
-            N = _sample(labels)
+            if keep_regex:
+              (keepers, samplers) = partition(labels, lambda x: bool(re.search(keep_regex, x))) 
+            else:
+              (keepers, samplers) = ([], labels)
+            N = _sample(samplers)
             try:
-                sample = rng.sample(sorted(list(labels)), N)
+                sample = rng.sample(sorted(list(samplers)), N)
             except ValueError:
                 log(f"Bad sample size ({N}) for population of size ({len(labels)})")
                 sys.exit(1)
-            return sample
+            return sample + keepers
 
     def _select(node, selected, paraGroup, paraFactor):
         rebelChild = None
@@ -505,7 +518,7 @@ def sampleParaphyletic(
 
 
 def sampleProportional(
-    tree, proportion=None, scale=None, keep=[], minTips=3, seed=None
+    tree, proportion=None, scale=None, keep=[], keep_regex="", minTips=3, seed=None
 ):
     rng = random.Random(seed)
 
