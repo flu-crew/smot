@@ -236,23 +236,24 @@ class TestALgorithms(unittest.TestCase):
 
     def test_sampleRandom(self):
 
-        self.assertEqual(
-            sampleRandom(sp.p_tree.parse("(B,(A,C,E),D);"), 5, rng=random.Random(42)),
-            sp.p_tree.parse("(B,(A,C,E),D);"),
-        )
+        def sampleRandomSimple(node, n, rng):
+          return sampleRandom(node, rng, count_fun = lambda x: n, keep_fun = lambda x: False)
 
         self.assertEqual(
-            sampleRandom(sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)),
+            sampleRandomSimple(sp.p_tree.parse("(B,(A,C,E),D);"), 5, rng=random.Random(42)),
             sp.p_tree.parse("(B,(A,C,E),D);"),
         )
         self.assertEqual(
-            sampleRandom(sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)),
+            sampleRandomSimple(sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)),
             sp.p_tree.parse("(B,(A,C,E),D);"),
         )
-        # this SHOULD work, but there appears to be a bug in unittest
         self.assertEqual(
-            sampleRandom(sp.p_tree.parse("(B,(A,C,E),D);"), 2, rng=random.Random(42)),
-            sp.p_tree.parse("(A,E);"),
+            sampleRandomSimple(sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)),
+            sp.p_tree.parse("(B,(A,C,E),D);"),
+        )
+        self.assertEqual(
+            sampleRandomSimple(sp.p_tree.parse("(B,(A,C,E),D);"), 2, rng=random.Random(42)),
+            sp.p_tree.parse("(B,D);"),
         )
 
     def test_sampleParaphyletic(self):

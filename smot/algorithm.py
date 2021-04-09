@@ -275,44 +275,39 @@ def sampleN(node, n):
     return node
 
 
-def sampleRandom(node, n, rng):
+def sampleRandom(node, rng, count_fun, keep_fun):
     """
     Sample N random tips from node
     """
-    if not node.data.nleafs:
-        node = setNLeafs(node)
-    if n == 0:
-        raise "Cannot create empty leaf"
-    elif n > node.data.nleafs:
-        return node
-    if not node.kids and not n == 1:
-        raise "Bug in sampleN"
 
     def _collect(b, d):
         if d.isLeaf:
-            b.add(d.label)
+            b.append(d.label)
         return b
 
-    labels = treefold(node, _collect, set())
+    (keepers, samplers) = partition(treefold(node, _collect, []), keep_fun)
 
-    # The set datastructure is a hash table. Hashes of strings vary between
-    # python sessions. Thus the sorting of elements in a set will also vary
-    # between sessions. So before sampling, the set needs to be converted to a
-    # list of sorted. Otherwise, the selected labels will be random even given
-    # the same random seed.
-    chosen = rng.sample(sorted(list(labels)), n)
+    # use the given function count_fun to decide how many tips to sample, but
+    # never sample more than there are
+    n = count_fun(samplers)
+
+    # if we are sampling everything, just return the origin
+    if(n >= len(samplers)):
+      return node
+
+    chosen = rng.sample(samplers, n)
+    chosen = set( chosen + keepers )
 
     def _cull(node):
         chosenOnes = [
             kid
             for kid in node.kids
-            if (not kid.data.isLeaf) or (kid.data.label in chosen)
+            if not kid.data.isLeaf or kid.data.label in chosen
         ]
         return chosenOnes
 
     sampledTree = treecut(node, _cull)
     sampledTree = clean(sampledTree)
-    sampledTree = setNLeafs(sampledTree)
     return sampledTree
 
 
@@ -523,16 +518,17 @@ def sampleProportional(
     rng = random.Random(seed)
 
     if proportion:
-
-        def _sample(kid):
-            N = max(minTips, math.floor(kid.data.nleafs * proportion))
-            return sampleRandom(kid, N, rng=rng)
-
+        count_fun = lambda xs: max(minTips, math.floor(len(xs) * proportion))
     else:
+        count_fun = lambda xs: max(minTips, math.floor(len(xs) ** scale))
 
-        def _sample(kid):
-            N = max(minTips, math.floor(kid.data.nleafs ** scale))
-            return sampleRandom(kid, N, rng=rng)
+    if keep_regex:
+      keep_fun = lambda label: re.search(keep_regex, label)
+    else:
+      keep_fun = lambda label: False
+
+    def _sample(node):
+      return sampleRandom(node=node, rng=rng, count_fun=count_fun, keep_fun=keep_fun)
 
     # recursive sampler
     def _sampleProportional(node):
@@ -551,6 +547,5 @@ def sampleProportional(
         node.kids = newkids
         return node
 
-    tree = setNLeafs(tree)
     tree = setFactorCounts(tree)
     return clean(_sampleProportional(tree))

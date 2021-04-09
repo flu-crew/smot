@@ -20,7 +20,7 @@ all:
 	smot sample prop --proportion=0.01 --min-tips=3 --seed=42 H1.tre | smot tips > .obs-h1-hundreth-sample-prop.txt
 	diff .obs-h1-hundreth-sample-prop.txt .exp-h1-hundreth-sample-prop.txt
 	# this should proportionally sample while retaining all global clades and unknowns representatives
-	smot sample prop --proportion=0.01 --min-tips=3 --factor-by-capture='(1[ABC]\.[0-9.]*)' --seed=42 H1.tre > .obs-h1-factored-prop.tre
+	smot sample prop --proportion=0.01 --min-tips=3 --seed=42 --factor-by-capture='(Other-Human[^|]*|1[ABC]\.[.0-9]*)' H1.tre > .obs-h1-factored-prop.tre
 	diff .obs-h1-factored-prop.tre .exp-h1-factored-prop.tre
 	# set default factor to NA, then list
 	smot factor table --default=NA fishbone.tre > .obs-factor-default.txt
@@ -62,3 +62,10 @@ all:
 	smot sample para --min-tips=3 -p 0.1 --seed 42 --keep-regex="(CVV|variant|accine|eference|Consensus)" --factor-by-capture="(1B[^|]*|Other-Human[^|]*)" 1B.tre > a
 	diff a .1B-para-keep.tre
 	rm a
+	# prop with keep-regex
+	smot sample prop --min-tips=3 -p 0.1 --seed 42 --keep-regex="England" --factor-by-capture="(swine|human)" pdm.tre > a.tre
+	diff a.tre .pdm-prop-keep.tre
+	smot grep England a.tre | smot tips | wc -l > a
+	smot tips pdm.tre | grep England | wc -l > b
+	diff a b
+	rm a.tre a b
