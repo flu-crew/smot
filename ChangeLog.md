@@ -1,4 +1,4 @@
-0.8.1 [2021-04-xx]
+0.8.1 [2021-04-09]
 
  * add `--keep-regex` option for `sample prop`
 
