@@ -66,6 +66,13 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(
             sp.p_label.parse("'''a''b''c'''"), "'a'b'c'"
         )
+        # support conventional escaping
+        self.assertEqual(
+            sp.p_label.parse("'a\\'b'"), "a'b"
+        )
+        self.assertEqual(
+            sp.p_label.parse("'a\\\\b'"), "a\\b"
+        )
 
 
     def test_length(self):

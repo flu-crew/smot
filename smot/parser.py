@@ -23,15 +23,18 @@ def p_squoted(parser):
 def p_tuple(parser):
     return p_parens(p.sepBy1(parser, p.string(",")))
 
+p_dchar = p.many((p.string('\\') >> p.regex(".")) ^ p.none_of('"')).parsecmap(lambda xs: ''.join(xs))
+p_schar = p.many((p.string('\\') >> p.regex(".")) ^ p.none_of("'")).parsecmap(lambda xs: ''.join(xs))
+
 # match normal single quoted expressions
 # support figtree convention of replacing within-string apostrophes with ''
-p_figtree_quote = p.many1(p_squoted(p.regex("[^']*"))).parsecmap(lambda xs: "'".join(xs))
+p_figtree_quote = p.many1(p_squoted(p_schar)).parsecmap(lambda xs: "'".join(xs))
 
 p_number = (
     p.regex("-?\d\.?\d*[eE]-?\d+") ^ p.regex("-?\d+\.\d+") ^ p.regex("-?\d+")
 ).parsecmap(float)
 p_label = (
-    p_figtree_quote ^ p_dquoted(p.regex('[^"]+')) ^ p.regex("[^,:;()[\]]+")
+    p_figtree_quote ^ p_dquoted(p_dchar) ^ p.regex("[^,:;()[\]]+")
 )
 p_length = p.string(":") >> p_number
 p_format = p_brackets(p.regex("[^\]]*"))
