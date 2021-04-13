@@ -42,7 +42,26 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(
             sp.p_label.parse('"pinky pie \'!@(*&#^"'), "pinky pie '!@(*&#^"
         )
+        self.assertEqual(
+            sp.p_label.parse("pinky pie's pink"), "pinky pie's pink"
+        )
         self.assertEqual(sp.p_label.parse("this/is_sparta"), "this/is_sparta")
+        # handle FigTree's funky escape convention
+        self.assertEqual(
+            sp.p_label.parse("''''"), "'"
+        )
+        self.assertEqual(
+            sp.p_label.parse("''''''"), "''"
+        )
+        self.assertEqual(
+            sp.p_label.parse("'''a'"), "'a"
+        )
+        self.assertEqual(
+            sp.p_label.parse("'a'''"), "a'"
+        )
+        self.assertEqual(
+            sp.p_label.parse("'''a''b''c'''"), "'a'b'c'"
+        )
 
     def test_length(self):
         self.assertEqual(sp.p_length.parse(":0.41"), 0.41)

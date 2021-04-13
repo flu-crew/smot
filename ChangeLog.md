@@ -1,3 +1,9 @@
+0.8.2 [2021-04-13]
+==================
+
+ * Add parser support for FigTree's weird single-quote escape convention. They
+   replace within-string single-quotes with a pair of single-quotes.
+
 0.8.1 [2021-04-09]
 
  * add `--keep-regex` option for `sample prop`

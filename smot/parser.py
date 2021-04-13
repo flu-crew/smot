@@ -23,12 +23,15 @@ def p_squoted(parser):
 def p_tuple(parser):
     return p_parens(p.sepBy1(parser, p.string(",")))
 
+# match normal single quoted expressions
+# support figtree convention of replacing within-string apostrophes with ''
+p_figtree_quote = p.many1(p_squoted(p.regex("[^']*"))).parsecmap(lambda xs: "'".join(xs))
 
 p_number = (
     p.regex("-?\d\.?\d*[eE]-?\d+") ^ p.regex("-?\d+\.\d+") ^ p.regex("-?\d+")
 ).parsecmap(float)
 p_label = (
-    p_squoted(p.regex("[^']+")) ^ p_dquoted(p.regex('[^"]+')) ^ p.regex("[^,:;()[\]]+")
+    p_figtree_quote ^ p_dquoted(p.regex('[^"]+')) ^ p.regex("[^,:;()[\]]+")
 )
 p_length = p.string(":") >> p_number
 p_format = p_brackets(p.regex("[^\]]*"))
@@ -57,6 +60,8 @@ p_newick = p_node << p.string(";")
 def dieIfMultiple(xs):
     if len(xs) == 1:
         return xs[0]
+    elif len(xs) == 0:
+        die(f"Failed to parse tree. The tree may be in an unsupported format (only Nexus and Newick are supported) or the tip labels may have strange characters or escape conventions. If you are sure this is a valid tree, send it to the maintainer and ask them to fix the smot parser.")
     else:
         die(f"Expected a single entry in this NEXUS file, found {len(xs)}")
 
