@@ -50,6 +50,10 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(
             sp.p_label.parse("'小指派'"), "小指派"
         )
+        self.assertEqual(
+            sp.p_label.parse("😀"), "😀"
+        )
+        
         # handle FigTree's funky escape convention
         self.assertEqual(
             sp.p_label.parse("''''"), "'"

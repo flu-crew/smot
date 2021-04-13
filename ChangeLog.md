@@ -1,6 +1,12 @@
 0.8.2 [2021-04-13]
 ==================
 
+ * Add test for unicode support (e.g., Chinese characters or emoticons)
+
+ * Add parser support for escaping characters. Any character following a '\' is
+   kept, so quotes within strings and backslashes can be escaped. Special
+   characters are not supported (e.g., substituting '\t' for a TAB character).
+
  * Add parser support for FigTree's weird single-quote escape convention. They
    replace within-string single-quotes with a pair of single-quotes.
 
