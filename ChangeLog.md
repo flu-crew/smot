@@ -1,3 +1,10 @@
+0.9.0 [2021-04-xx]
+==================
+
+ * Remove `plot`, `convert`, and `random` commands and the the `biopython`
+   dependency. These commands were not well-supported and their dependency was
+   very heavy. Use phylomander or dedicated plotting packages instead.
+
 0.8.2 [2021-04-13]
 ==================
 

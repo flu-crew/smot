@@ -1,3 +1,2 @@
 parsec
-biopython
 click

@@ -111,17 +111,6 @@ def read_tree(treefile):
 dec_tree = click.argument("TREE", default=sys.stdin, type=click.File())
 
 
-#      smot convert --from=<from> --to=<to> [<filename>]
-@click.command(help="Convert between tree formats.")
-@click.option("--from", "opt_from", type=str, help="input tree format")
-@click.option("--to", "opt_to", type=str, help="output tree format")
-@dec_tree
-def convert(opt_from, opt_to, tree):
-    from Bio import Phylo
-
-    Phylo.convert(tree, opt_from, sys.stdout, opt_to)
-
-
 #      smot tips [<filename>]
 @click.command(help="Print the tree tip labels")
 @dec_tree
@@ -138,18 +127,6 @@ def tips(tree):
 
     for tip in alg.treefold(tree, _fun, []):
         print(tip)
-
-
-#      smot plot [<filename>]
-@click.command(help="Build a simple tree plot")
-@dec_tree
-def plot(tree):
-    from Bio import Phylo
-
-    tree = read_tree(tree)
-    btree = Phylo.BaseTree.Tree.from_clade(tree.asBiopythonTree())
-    btree.ladderize(reverse=True)
-    Phylo.draw(btree)
 
 
 def factoring(function):
@@ -495,34 +472,17 @@ def grep(pattern, tree, invert_match, perl, file):
     print(tree.newick())
 
 
-@click.command(help="Generate a random tree from a file of labels")
-@dec_seed
-@click.argument("TIPNAMES", default=sys.stdin, type=click.File())
-def random(seed, tipnames):
-    from Bio import Phylo
-    import random
-
-    names = [name.strip() for name in tipnames.readlines()]
-    random.seed(seed)
-    btree = Phylo.BaseTree.Tree.randomized(names)
-    Phylo.write(btree, file=sys.stdout, format="newick")
-
-
 #      smot clean [<filename>]
 @click.command(
     help="Clean and sort the tree. Nodes with single children are removed. Branch lengths are added (defaulting to 0). The tree is sorted (the topology is NOT changed and no root is added)."
 )
 @dec_tree
 def clean(tree):
-    from Bio import Phylo
     import smot.algorithm as alg
 
     tree = read_tree(tree)
     tree = alg.clean(tree)
-    btree = Phylo.BaseTree.Tree.from_clade(tree.asBiopythonTree())
-    btree.ladderize(reverse=True)
-    Phylo.write(btree, file=sys.stdout, format="newick")
-
+    tree.newick()
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
