@@ -37,6 +37,7 @@ def treecut(node, fun, **kwargs):
     node.kids = [treecut(kid, fun, **kwargs) for kid in node.kids]
     return node
 
+
 def treepull(node, fun, **kwargs):
     """
     Change parent based on children
@@ -52,6 +53,7 @@ def treepull(node, fun, **kwargs):
         node.data = fun(node.data, [kid.data for kid in node.kids], **kwargs)
     return node
 
+
 def treepush(node, fun, **kwargs):
     """
     Change children based on parent
@@ -60,23 +62,25 @@ def treepush(node, fun, **kwargs):
     """
 
     if not node.data.isLeaf:
-      for kid in node.kids:
-        kid.data = fun(node.data, kid.data, **kwargs)
-      node.kids = [treepush(kid, fun, **kwargs) for kid in node.kids] 
+        for kid in node.kids:
+            kid.data = fun(node.data, kid.data, **kwargs)
+        node.kids = [treepush(kid, fun, **kwargs) for kid in node.kids]
 
     return node
 
-def partition(xs, f):
-  a = []
-  b = []
-  for x in xs:
-    if f(x):
-      a.append(x)
-    else:
-      b.append(x)
-  return (a,b)
 
-def clean(tree, isRoot=True):
+def partition(xs, f):
+    a = []
+    b = []
+    for x in xs:
+        if f(x):
+            a.append(x)
+        else:
+            b.append(x)
+    return (a, b)
+
+
+def clean(node, isRoot=True):
     """
     Remove nodes that have only one child. Add the branch lengths.
     """
@@ -104,8 +108,8 @@ def clean(tree, isRoot=True):
             node = Node(kids=[node])
         return node
 
-    tree = setNLeafs(tree)
-    return _clean(tree, isRoot)
+    node = setNLeafs(node)
+    return _clean(node, isRoot)
 
 
 def factorByLabel(node, fun, **kwargs):
@@ -120,7 +124,7 @@ def factorByLabel(node, fun, **kwargs):
     return treemap(node, mapfun, **kwargs)
 
 
-def factorByField(tree, field, default=None, sep="|"):
+def factorByField(node, field, default=None, sep="|"):
     """
     Factor by the <field>th 1-based index in the tip label.
     """
@@ -131,10 +135,10 @@ def factorByField(tree, field, default=None, sep="|"):
         except:
             return default
 
-    return factorByLabel(tree, _fun)
+    return factorByLabel(node, _fun)
 
 
-def factorByCapture(tree, pat, default=None):
+def factorByCapture(node, pat, default=None):
     pat = re.compile(pat)
 
     def _fun(name):
@@ -150,10 +154,10 @@ def factorByCapture(tree, pat, default=None):
                     return m.groups(0)
         return default
 
-    return factorByLabel(tree, _fun)
+    return factorByLabel(node, _fun)
 
 
-def factorByTable(tree, filename, default=None):
+def factorByTable(node, filename, default=None):
     with open(filename, "r") as f:
         factorMap = dict()
         for line in f.readlines():
@@ -171,7 +175,7 @@ def factorByTable(tree, filename, default=None):
                         return v
             return default
 
-        return factorByLabel(tree, _fun)
+        return factorByLabel(node, _fun)
 
 
 def isMonophyletic(node):
@@ -189,7 +193,7 @@ def getFactor(node):
         return None
 
 
-def imputeFactors(tree):
+def imputeFactors(node):
     def setFactors(node, factor):
         def _fun(b):
             b.factor = factor
@@ -197,53 +201,52 @@ def imputeFactors(tree):
 
         return treemap(node, _fun)
 
-    if tree.data.factorCount and isMonophyletic(tree):
-        tree = setFactors(tree, getFactor(tree))
+    if node.data.factorCount and isMonophyletic(node):
+        node = setFactors(node, getFactor(node))
     else:
-        newkids = [imputeFactors(kid) for kid in tree.kids]
-        tree.kids = newkids
-    return tree
+        newkids = [imputeFactors(kid) for kid in node.kids]
+        node.kids = newkids
+    return node
 
 
-def imputePatristicFactors(tree):
-
+def imputePatristicFactors(node):
     def kid_fun_(d, ds):
-      d.factorDist = dict()
-      if d.isLeaf and d.factor:
-        d.factorDist[d.factor] = 0
-      else:
-        for kid_data in ds:
-          for (label, dist) in kid_data.factorDist.items():
-            pdist = dist + kid_data.length
-            if label in d.factorDist:
-              d.factorDist[label] = min(pdist, d.factorDist[label])
-            else:
-              d.factorDist[label] = pdist
-      return d
+        d.factorDist = dict()
+        if d.isLeaf and d.factor:
+            d.factorDist[d.factor] = 0
+        else:
+            for kid_data in ds:
+                for (label, dist) in kid_data.factorDist.items():
+                    pdist = dist + kid_data.length
+                    if label in d.factorDist:
+                        d.factorDist[label] = min(pdist, d.factorDist[label])
+                    else:
+                        d.factorDist[label] = pdist
+        return d
 
     def parent_fun_(p, k):
-      for (label, dist) in p.factorDist.items():
-        if label in k.factorDist:
-          k.factorDist[label] = min(k.factorDist[label], dist + k.length)
-        else:
-          k.factorDist[label] = k.length + dist
-      return k
+        for (label, dist) in p.factorDist.items():
+            if label in k.factorDist:
+                k.factorDist[label] = min(k.factorDist[label], dist + k.length)
+            else:
+                k.factorDist[label] = k.length + dist
+        return k
 
     def leaf_fun_(d):
-      if d.factorDist:
-        d.factor = sorted(d.factorDist.items(), key=lambda x: x[1])[0][0]
-      return d
+        if d.factorDist:
+            d.factor = sorted(d.factorDist.items(), key=lambda x: x[1])[0][0]
+        return d
 
     # pull the distances from child labels up to root
-    tree = treepull(tree, kid_fun_)
+    node = treepull(node, kid_fun_)
 
     # push the distances from root down to leafs
-    tree = treepush(tree, parent_fun_)
+    node = treepush(node, parent_fun_)
 
     # set factors to the nearest factor
-    tree = treemap(tree, leaf_fun_)
+    node = treemap(node, leaf_fun_)
 
-    return tree
+    return node
 
 
 def getLeftmost(node):
@@ -292,17 +295,15 @@ def sampleRandom(node, rng, count_fun, keep_fun):
     n = count_fun(samplers)
 
     # if we are sampling everything, just return the origin
-    if(n >= len(samplers)):
-      return node
+    if n >= len(samplers):
+        return node
 
     chosen = rng.sample(samplers, n)
-    chosen = set( chosen + keepers )
+    chosen = set(chosen + keepers)
 
     def _cull(node):
         chosenOnes = [
-            kid
-            for kid in node.kids
-            if not kid.data.isLeaf or kid.data.label in chosen
+            kid for kid in node.kids if not kid.data.isLeaf or kid.data.label in chosen
         ]
         return chosenOnes
 
@@ -380,7 +381,7 @@ def setFactorCounts(node):
     return node
 
 
-def sampleContext(tree, keep=[], maxTips=5):
+def sampleContext(node, keep=[], maxTips=5):
     # recursive sampler
     def _sampleContext(node):
         newkids = []
@@ -398,13 +399,13 @@ def sampleContext(tree, keep=[], maxTips=5):
         node.kids = newkids
         return node
 
-    tree = setNLeafs(tree)
-    tree = setFactorCounts(tree)
-    return clean(_sampleContext(tree))
+    node = setNLeafs(node)
+    node = setFactorCounts(node)
+    return clean(_sampleContext(node))
 
 
 def sampleParaphyletic(
-    tree, proportion=None, scale=None, keep=[], keep_regex="", minTips=3, seed=None
+    node, proportion=None, scale=None, keep=[], keep_regex="", minTips=3, seed=None
 ):
     rng = random.Random(seed)
 
@@ -431,9 +432,11 @@ def sampleParaphyletic(
             return labels
         else:
             if keep_regex:
-              (keepers, samplers) = partition(labels, lambda x: bool(re.search(keep_regex, x))) 
+                (keepers, samplers) = partition(
+                    labels, lambda x: bool(re.search(keep_regex, x))
+                )
             else:
-              (keepers, samplers) = ([], labels)
+                (keepers, samplers) = ([], labels)
             N = _sample(samplers)
             try:
                 sample = rng.sample(sorted(list(samplers)), N)
@@ -496,8 +499,8 @@ def sampleParaphyletic(
                 selected.update(sampleLabels(v, factor=k))
         return selected
 
-    tree = setFactorCounts(tree)
-    selected = _select(tree, set(), set(), None)
+    node = setFactorCounts(node)
+    selected = _select(node, set(), set(), None)
 
     def _cull(node):
         chosenOnes = [
@@ -507,13 +510,11 @@ def sampleParaphyletic(
         ]
         return chosenOnes
 
-    sampledTree = treecut(tree, _cull)
-    sampledTree = clean(sampledTree)
-    return sampledTree
+    return clean(treecut(node, _cull))
 
 
 def sampleProportional(
-    tree, proportion=None, scale=None, keep=[], keep_regex="", minTips=3, seed=None
+    node, proportion=None, scale=None, keep=[], keep_regex="", minTips=3, seed=None
 ):
     rng = random.Random(seed)
 
@@ -523,12 +524,12 @@ def sampleProportional(
         count_fun = lambda xs: max(minTips, math.floor(len(xs) ** scale))
 
     if keep_regex:
-      keep_fun = lambda label: re.search(keep_regex, label)
+        keep_fun = lambda label: re.search(keep_regex, label)
     else:
-      keep_fun = lambda label: False
+        keep_fun = lambda label: False
 
     def _sample(node):
-      return sampleRandom(node=node, rng=rng, count_fun=count_fun, keep_fun=keep_fun)
+        return sampleRandom(node=node, rng=rng, count_fun=count_fun, keep_fun=keep_fun)
 
     # recursive sampler
     def _sampleProportional(node):
@@ -547,5 +548,5 @@ def sampleProportional(
         node.kids = newkids
         return node
 
-    tree = setFactorCounts(tree)
-    return clean(_sampleProportional(tree))
+    node = setFactorCounts(node)
+    return clean(_sampleProportional(node))

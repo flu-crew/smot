@@ -75,7 +75,7 @@ ListOfStrings = ListOfStringsType()
 
 
 def factorTree(
-    tree,
+    node,
     factor_by_capture=None,
     factor_by_field=None,
     factor_by_table=None,
@@ -90,20 +90,23 @@ def factorTree(
             die(
                 f"""Expected a positive integer for field --factor-by-field, got '{factor_by_field}'"""
             )
-        tree = alg.factorByField(tree, field, default=default)
+        nodes = alg.factorByField(node, field, default=default)
     elif factor_by_capture is not None:
-        tree = alg.factorByCapture(tree, pat=factor_by_capture, default=default)
+        node = alg.factorByCapture(
+            node, pat=factor_by_capture, default=default
+        )
     elif factor_by_table is not None:
-        tree = alg.factorByTable(tree, filename=factor_by_table, default=default)
-    tree = alg.setFactorCounts(tree)
-    return tree
+        node = alg.factorByTable(
+            node, filename=factor_by_table, default=default
+        )
+    node = alg.setFactorCounts(node)
+    return node
 
 
 def read_tree(treefile):
     from smot.parser import p_tree
-
     rawtree = treefile.readlines()
-    rawtree = "\n".join(rawtree).strip()
+    rawtree = ''.join(rawtree)
     tree = p_tree.parse(rawtree)
     return tree
 
@@ -118,14 +121,14 @@ def tips(tree):
     import smot.algorithm as alg
 
     tree = read_tree(tree)
-    tree = alg.setNLeafs(tree)
+    tree.tree = alg.setNLeafs(tree.tree)
 
     def _fun(b, x):
         if x.isLeaf:
             b.append(x.label)
         return b
 
-    for tip in alg.treefold(tree, _fun, []):
+    for tip in alg.treefold(tree.tree, _fun, []):
         print(tip)
 
 
@@ -185,7 +188,11 @@ dec_keep = click.option(
 )
 
 dec_keep_regex = click.option(
-    "-r", "--keep-regex", default="", type=str, help="Keep all tips that match this pattern, these tips do not count towards downsampling quotas."
+    "-r",
+    "--keep-regex",
+    default="",
+    type=str,
+    help="Keep all tips that match this pattern, these tips do not count towards downsampling quotas.",
 )
 
 
@@ -213,14 +220,14 @@ def equal(
     import smot.algorithm as alg
 
     tree = read_tree(tree)
-    tree = factorTree(
-        tree=tree,
+    tree.tree = factorTree(
+        node=tree.tree,
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
     )
-    tree = alg.sampleContext(tree, keep=keep, maxTips=max_tips)
+    tree.tree = alg.sampleContext(tree.tree, keep=keep, maxTips=max_tips)
     print(tree.newick())
 
 
@@ -259,15 +266,21 @@ def prop(
         die("Please add either a --proportion or --scale option")
 
     tree = read_tree(tree)
-    tree = factorTree(
-        tree=tree,
+    tree.tree = factorTree(
+        node=tree.tree,
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
     )
-    tree = alg.sampleProportional(
-        tree, keep=keep, keep_regex=keep_regex, proportion=proportion, scale=scale, minTips=min_tips, seed=seed
+    tree.tree = alg.sampleProportional(
+        tree.tree,
+        keep=keep,
+        keep_regex=keep_regex,
+        proportion=proportion,
+        scale=scale,
+        minTips=min_tips,
+        seed=seed,
     )
     print(tree.newick())
 
@@ -307,15 +320,21 @@ def para(
         die("Please add either a --proportion or --scale option")
 
     tree = read_tree(tree)
-    tree = factorTree(
-        tree=tree,
+    tree.tree = factorTree(
+        node=tree.tree,
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
     )
-    tree = alg.sampleParaphyletic(
-        tree, keep=keep, keep_regex=keep_regex, proportion=proportion, scale=scale, minTips=min_tips, seed=seed
+    tree.tree = alg.sampleParaphyletic(
+        tree.tree,
+        keep=keep,
+        keep_regex=keep_regex,
+        proportion=proportion,
+        scale=scale,
+        minTips=min_tips,
+        seed=seed,
     )
     print(tree.newick())
 
@@ -359,8 +378,8 @@ def factor(
     import smot.algorithm as alg
 
     tree = read_tree(tree)
-    tree = factorTree(
-        tree=tree,
+    tree.tree = factorTree(
+        node=tree.tree,
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
@@ -368,9 +387,9 @@ def factor(
     )
 
     if patristic:
-        tree = alg.imputePatristicFactors(tree)
+        tree.tree = alg.imputePatristicFactors(tree.tree)
     elif impute:
-        tree = alg.imputeFactors(tree)
+        tree.tree = alg.imputeFactors(tree.tree)
 
     # create TAB-delimited, table with columns for the tip labels and the
     # (possibly imputed) factor
@@ -385,7 +404,7 @@ def factor(
                 b.append(f"{x.label}\t{factor}")
             return b
 
-        for row in alg.treefold(tree, _fun, []):
+        for row in alg.treefold(tree.tree, _fun, []):
             print(row)
 
     # prepend or append the factor to the tip labels and print the resulting tree
@@ -401,7 +420,7 @@ def factor(
                     x.label = f"{x.label}|{x.factor}"
             return x
 
-        tree = alg.treemap(tree, _fun)
+        tree.tree = alg.treemap(tree.tree, _fun)
         print(tree.newick())
 
 
@@ -422,7 +441,7 @@ def tipsed(pattern, replacement, tree):
         return nodeData
 
     tree = read_tree(tree)
-    tree = alg.treemap(tree, fun_)
+    tree.tree = alg.treemap(tree.tree, fun_)
     print(tree.newick())
 
 
@@ -467,8 +486,7 @@ def grep(pattern, tree, invert_match, perl, file):
         ]
 
     tree = read_tree(tree)
-    tree = alg.treecut(tree, fun_)
-    tree = alg.clean(tree)
+    tree.tree = alg.clean(alg.treecut(tree.tree, fun_))
     print(tree.newick())
 
 
@@ -481,8 +499,8 @@ def clean(tree):
     import smot.algorithm as alg
 
     tree = read_tree(tree)
-    tree = alg.clean(tree)
-    tree.newick()
+    alg.clean(tree.tree).newick()
+
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -504,14 +522,11 @@ sample.add_command(equal)
 sample.add_command(prop)
 sample.add_command(para)
 
-cli.add_command(convert)
 cli.add_command(tips)
-cli.add_command(plot)
 cli.add_command(sample)
 cli.add_command(factor)
 cli.add_command(tipsed)
 cli.add_command(grep)
-cli.add_command(random)
 cli.add_command(clean)
 
 

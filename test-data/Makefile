@@ -8,8 +8,6 @@ all:
 	diff .exp-tips.txt .obs-tips.txt
 	smot tipsed X Y fishbone.tre > .obs-tipsed.txt
 	diff .exp-tipsed.txt .obs-tipsed.txt
-	smot tips fishbone.tre | smot random --seed=42 > .obs-random.txt
-	diff .exp-random.txt .obs-random.txt
 	smot sample equal --factor-by-field=2 --keep="S" --max-tips=2 --zero polytomyHS.tre > .obs-polytomyHS-equal.txt
 	diff .exp-polytomyHS-equal.txt .obs-polytomyHS-equal.txt
 	smot sample prop --seed=42 --factor-by-field=2 --proportion=0.2 --keep="S" --min-tips=2 polytomyHS.tre > .obs-polytomyHS-prop.txt

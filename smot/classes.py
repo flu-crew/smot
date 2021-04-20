@@ -1,5 +1,18 @@
 import re
-from Bio.Phylo.BaseTree import Clade
+
+
+class Tree:
+    def __init__(self, tree, colmap=dict(), meta=dict()):
+        self.tree = tree
+        self.meta = meta
+
+    def newick(self):
+        return self.tree.newick()
+
+    def __str__(self):
+        # FIXME: currently this just wraps the newick function
+        # I should instead write nexus format with coloring and all
+        return str(self.tree)
 
 
 class NodeData:
@@ -17,9 +30,9 @@ class NodeData:
     def _color(self):
         color = None
         if self.label:
-          m = re.search("&!color=(#\d{6})", self.label)
-          if m:
-              color = m.groups()[0]
+            m = re.search("&!color=(#\d{6})", self.label)
+            if m:
+                color = m.groups()[0]
         return color
 
     def __eq__(self, other):
@@ -41,14 +54,6 @@ class Node:
 
     def newick(self):
         return str(self) + ";"
-
-    def asBiopythonTree(self):
-        return Clade(
-            branch_length=self.data.length,
-            name=self.data.label,
-            color=self.data.color,
-            clades=[kid.asBiopythonTree() for kid in self.kids],
-        )
 
     def __eq__(self, other):
         return self.kids == other.kids and self.data == other.data

@@ -42,42 +42,21 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(
             sp.p_label.parse('"pinky pie \'!@(*&#^"'), "pinky pie '!@(*&#^"
         )
-        self.assertEqual(
-            sp.p_label.parse("pinky pie's pink"), "pinky pie's pink"
-        )
+        self.assertEqual(sp.p_label.parse("pinky pie's pink"), "pinky pie's pink")
         self.assertEqual(sp.p_label.parse("this/is_sparta"), "this/is_sparta")
         # support unicode characters
-        self.assertEqual(
-            sp.p_label.parse("'小指派'"), "小指派"
-        )
-        self.assertEqual(
-            sp.p_label.parse("😀"), "😀"
-        )
-        
-        # handle FigTree's funky escape convention
-        self.assertEqual(
-            sp.p_label.parse("''''"), "'"
-        )
-        self.assertEqual(
-            sp.p_label.parse("''''''"), "''"
-        )
-        self.assertEqual(
-            sp.p_label.parse("'''a'"), "'a"
-        )
-        self.assertEqual(
-            sp.p_label.parse("'a'''"), "a'"
-        )
-        self.assertEqual(
-            sp.p_label.parse("'''a''b''c'''"), "'a'b'c'"
-        )
-        # support conventional escaping
-        self.assertEqual(
-            sp.p_label.parse("'a\\'b'"), "a'b"
-        )
-        self.assertEqual(
-            sp.p_label.parse("'a\\\\b'"), "a\\b"
-        )
+        self.assertEqual(sp.p_label.parse("'小指派'"), "小指派")
+        self.assertEqual(sp.p_label.parse("😀"), "😀")
 
+        # handle FigTree's funky escape convention
+        self.assertEqual(sp.p_label.parse("''''"), "'")
+        self.assertEqual(sp.p_label.parse("''''''"), "''")
+        self.assertEqual(sp.p_label.parse("'''a'"), "'a")
+        self.assertEqual(sp.p_label.parse("'a'''"), "a'")
+        self.assertEqual(sp.p_label.parse("'''a''b''c'''"), "'a'b'c'")
+        # support conventional escaping
+        self.assertEqual(sp.p_label.parse("'a\\'b'"), "a'b")
+        self.assertEqual(sp.p_label.parse("'a\\\\b'"), "a\\b")
 
     def test_length(self):
         self.assertEqual(sp.p_length.parse(":0.41"), 0.41)
@@ -113,11 +92,11 @@ class TestParsers(unittest.TestCase):
 
     def test_newick(self):
         self.assertEqual(
-            sp.p_tree.parse("(A[foo]:0.42)Root;"),
+            sp.p_tree.parse("(A[foo]:0.42)Root;").tree,
             sp.Node(kids=[sp.Node(label="A", form="foo", length=0.42)], label="Root"),
         )
         self.assertEqual(
-            sp.p_tree.parse("(B,(A,C,E),D);"),
+            sp.p_tree.parse("(B,(A,C,E),D);").tree,
             sp.Node(
                 kids=[
                     sp.Node(label="B"),
@@ -131,6 +110,186 @@ class TestParsers(unittest.TestCase):
                     sp.Node(label="D"),
                 ]
             ),
+        )
+
+    def test_nexus(self):
+        self.assertEqual(
+            sp.p_nexus_tree_line.parse("\ttree tree_1 = [&R] (B,(A,C,E),D);\n"),
+            sp.p_tree.parse("(B,(A,C,E),D);").tree,
+        )
+
+        taxa_block = "\n".join(
+            [
+                "\tdimensions ntax=3",
+                "\ttaxlabels",
+                "\t'A'",
+                "\t'B'[&!color=#999999]",
+                "\t'C'",
+                "\t'D'",
+                "\t'E'",
+                ";",
+            ]
+        )
+
+        self.assertEqual(sp.p_taxa_block.parse(taxa_block), dict(B="#999999"))
+        taxa_section = "\n".join(
+            [
+                "begin taxa;",
+                "\tdimensions ntax=3",
+                "\ttaxlabels",
+                "\t'A'",
+                "\t'B'[&!color=#999999]",
+                "\t'C'",
+                "\t'D'",
+                "\t'E'",
+                ";",
+                "end;" "",
+            ]
+        )
+        self.assertEqual(
+            sp.p_nexus_section.parse(taxa_section), ("taxa", dict(B="#999999"))
+        )
+        tree_section = "\n".join(
+            [
+                "begin trees;",
+                "\ttree tree_1 = [&R] (B,(A,C,E),D);",
+                "end;",
+            ]
+        )
+        self.assertEqual(
+            sp.p_nexus_section.parse(tree_section)[1].newick(), "(B,(A,C,E),D);"
+        )
+
+        nexus_file = "\n".join(
+            [
+                "#NEXUS",
+                "begin taxa;",
+                "\tdimensions ntax=3",
+                "\ttaxlabels",
+                "\t'A'",
+                "\t'B'",
+                "\t'C'",
+                "\t'D'",
+                "\t'E'",
+                ";",
+                "end;",
+                "",
+                "begin trees;",
+                "\ttree tree_1 = [&R] (B,(A,C,E),D);",
+                "end;",
+                "",
+            ]
+        )
+        self.assertEqual(
+            sp.p_nexus.parse(nexus_file).tree, sp.p_tree.parse("(B,(A,C,E),D);").tree
+        )
+        self.assertEqual(
+            sp.p_tree.parse(nexus_file).tree, sp.p_tree.parse("(B,(A,C,E),D);").tree
+        )
+
+        big_nexus_file = "\n".join([
+            """#NEXUS""",
+            """begin taxa;""",
+            """	dimensions ntax=6;""",
+            """	taxlabels""",
+            """	'X1|H'[&!color=#ff0000]""",
+            """	'X2|H'""",
+            """	'X3|H'""",
+            """	'X4|H'""",
+            """	'X5|H'""",
+            """	'X6|S'""",
+            """;""",
+            """end;""",
+            """""",
+            """begin trees;""",
+            """	tree tree_1 = [&R] ('X1|H':0.3,('X2|H':0.3,('X3|H':0.3,('X4|H':0.3,('X5|H':0.3,'X6|S':0.3):0.3):0.3):0.3):0.3);""",
+            """end;""",
+            """""",
+            """begin figtree;""",
+            """	set appearance.backgroundColorAttribute="Default";""",
+            """	set appearance.backgroundColour=#ffffff;""",
+            """	set appearance.branchColorAttribute="User selection";""",
+            """	set appearance.branchColorGradient=false;""",
+            """	set appearance.branchLineWidth=1.0;""",
+            """	set appearance.branchMinLineWidth=0.0;""",
+            """	set appearance.branchWidthAttribute="Fixed";""",
+            """	set appearance.foregroundColour=#000000;""",
+            """	set appearance.hilightingGradient=false;""",
+            """	set appearance.selectionColour=#2d3680;""",
+            """	set branchLabels.colorAttribute="User selection";""",
+            """	set branchLabels.displayAttribute="Branch times";""",
+            """	set branchLabels.fontName="Al Bayan";""",
+            """	set branchLabels.fontSize=8;""",
+            """	set branchLabels.fontStyle=0;""",
+            """	set branchLabels.isShown=false;""",
+            """	set branchLabels.significantDigits=4;""",
+            """	set layout.expansion=0;""",
+            """	set layout.layoutType="RECTILINEAR";""",
+            """	set layout.zoom=0;""",
+            """	set legend.attribute=null;""",
+            """	set legend.fontSize=10.0;""",
+            """	set legend.isShown=false;""",
+            """	set legend.significantDigits=4;""",
+            """	set nodeBars.barWidth=4.0;""",
+            """	set nodeBars.displayAttribute=null;""",
+            """	set nodeBars.isShown=false;""",
+            """	set nodeLabels.colorAttribute="User selection";""",
+            """	set nodeLabels.displayAttribute="Node ages";""",
+            """	set nodeLabels.fontName="Al Bayan";""",
+            """	set nodeLabels.fontSize=8;""",
+            """	set nodeLabels.fontStyle=0;""",
+            """	set nodeLabels.isShown=false;""",
+            """	set nodeLabels.significantDigits=4;""",
+            """	set nodeShape.colourAttribute=null;""",
+            """	set nodeShape.isShown=false;""",
+            """	set nodeShape.minSize=10.0;""",
+            """	set nodeShape.scaleType=Width;""",
+            """	set nodeShape.shapeType=Circle;""",
+            """	set nodeShape.size=4.0;""",
+            """	set nodeShape.sizeAttribute=null;""",
+            """	set polarLayout.alignTipLabels=false;""",
+            """	set polarLayout.angularRange=0;""",
+            """	set polarLayout.rootAngle=0;""",
+            """	set polarLayout.rootLength=100;""",
+            """	set polarLayout.showRoot=true;""",
+            """	set radialLayout.spread=0.0;""",
+            """	set rectilinearLayout.alignTipLabels=false;""",
+            """	set rectilinearLayout.curvature=0;""",
+            """	set rectilinearLayout.rootLength=100;""",
+            """	set scale.offsetAge=0.0;""",
+            """	set scale.rootAge=1.0;""",
+            """	set scale.scaleFactor=1.0;""",
+            """	set scale.scaleRoot=false;""",
+            """	set scaleAxis.automaticScale=true;""",
+            """	set scaleAxis.fontSize=8.0;""",
+            """	set scaleAxis.isShown=false;""",
+            """	set scaleAxis.lineWidth=1.0;""",
+            """	set scaleAxis.majorTicks=1.0;""",
+            """	set scaleAxis.origin=0.0;""",
+            """	set scaleAxis.reverseAxis=false;""",
+            """	set scaleAxis.showGrid=true;""",
+            """	set scaleBar.automaticScale=true;""",
+            """	set scaleBar.fontSize=10.0;""",
+            """	set scaleBar.isShown=true;""",
+            """	set scaleBar.lineWidth=1.0;""",
+            """	set scaleBar.scaleRange=0.0;""",
+            """	set tipLabels.colorAttribute="User selection";""",
+            """	set tipLabels.displayAttribute="Names";""",
+            """	set tipLabels.fontName="Al Bayan";""",
+            """	set tipLabels.fontSize=8;""",
+            """	set tipLabels.fontStyle=0;""",
+            """	set tipLabels.isShown=true;""",
+            """	set tipLabels.significantDigits=4;""",
+            """	set trees.order=false;""",
+            """	set trees.orderType="increasing";""",
+            """	set trees.rooting=false;""",
+            """	set trees.rootingType="User Selection";""",
+            """	set trees.transform=false;""",
+            """	set trees.transformType="cladogram";""",
+            """end;""",
+          ])
+        self.assertEqual(
+            sp.p_tree.parse(big_nexus_file).tree, sp.p_tree.parse("('X1|H':0.3,('X2|H':0.3,('X3|H':0.3,('X4|H':0.3,('X5|H':0.3,'X6|S':0.3):0.3):0.3):0.3):0.3);").tree
         )
 
 
@@ -158,7 +317,7 @@ class TestALgorithms(unittest.TestCase):
             return x
 
         self.assertEqual(
-            treemap(sp.p_tree.parse("(B,(A,C,E),D);"), _lower),
+            treemap(sp.p_tree.parse("(B,(A,C,E),D);").tree, _lower),
             sp.Node(
                 kids=[
                     sp.Node(label="b"),
@@ -180,7 +339,7 @@ class TestALgorithms(unittest.TestCase):
             return b
 
         self.assertEqual(
-            treefold(sp.p_tree.parse("(B,(A,C,E),D);"), _fun, []),
+            treefold(sp.p_tree.parse("(B,(A,C,E),D);").tree, _fun, []),
             [None, "B", None, "A", "C", "E", "D"],
         )
 
@@ -192,7 +351,7 @@ class TestALgorithms(unittest.TestCase):
                 return None
 
         self.assertEqual(
-            factorByLabel(sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);"), _fun),
+            factorByLabel(sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, _fun),
             sp.Node(
                 kids=[
                     sp.Node(label="B|a", factor="a"),
@@ -210,13 +369,15 @@ class TestALgorithms(unittest.TestCase):
 
     def test_getLeftmost(self):
         self.assertEqual(
-            getLeftmost(sp.p_tree.parse("(B,(A,C,E),D);")), Node(label="B")
+            getLeftmost(sp.p_tree.parse("(B,(A,C,E),D);").tree), Node(label="B")
         )
 
     def test_sampleContext(self):
         self.assertEqual(
             sampleContext(
-                factorByField(sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);"), field=2),
+                factorByField(
+                    sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, field=2
+                ),
                 keep=[],
                 maxTips=1,
             ),
@@ -231,7 +392,9 @@ class TestALgorithms(unittest.TestCase):
 
         self.assertEqual(
             sampleContext(
-                factorByField(sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);"), field=2),
+                factorByField(
+                    sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, field=2
+                ),
                 keep=[],
                 maxTips=2,
             ),
@@ -251,55 +414,68 @@ class TestALgorithms(unittest.TestCase):
 
     def test_clean(self):
         self.assertEqual(
-            clean(sp.p_tree.parse("(B,((A)),D);")), sp.p_tree.parse("(B,A,D);")
-        )
-        self.assertEqual(clean(sp.p_tree.parse("(((A)));")), sp.p_tree.parse("(A);"))
-        self.assertEqual(
-            clean(sp.p_tree.parse("((((((B)),((A))))));")), sp.p_tree.parse("(B,A);")
+            clean(sp.p_tree.parse("(B,((A)),D);").tree),
+            sp.p_tree.parse("(B,A,D);").tree,
         )
         self.assertEqual(
-            clean(sp.p_tree.parse("((((A,B))));")), sp.p_tree.parse("(A,B);")
+            clean(sp.p_tree.parse("(((A)));").tree), sp.p_tree.parse("(A);").tree
         )
         self.assertEqual(
-            clean(sp.p_tree.parse("(((A,B)),((((C)))));")),
-            sp.p_tree.parse("((A,B),C);"),
+            clean(sp.p_tree.parse("((((((B)),((A))))));").tree),
+            sp.p_tree.parse("(B,A);").tree,
         )
         self.assertEqual(
-            clean(sp.p_tree.parse("(B:1,((A:3):2):1,D:1);")),
-            sp.p_tree.parse("(B:1,A:6,D:1);"),
+            clean(sp.p_tree.parse("((((A,B))));").tree), sp.p_tree.parse("(A,B);").tree
+        )
+        self.assertEqual(
+            clean(sp.p_tree.parse("(((A,B)),((((C)))));").tree),
+            sp.p_tree.parse("((A,B),C);").tree,
+        )
+        self.assertEqual(
+            clean(sp.p_tree.parse("(B:1,((A:3):2):1,D:1);").tree),
+            sp.p_tree.parse("(B:1,A:6,D:1);").tree,
         )
 
     def test_sampleRandom(self):
-
         def sampleRandomSimple(node, n, rng):
-          return sampleRandom(node, rng, count_fun = lambda x: n, keep_fun = lambda x: False)
+            return sampleRandom(
+                node, rng, count_fun=lambda x: n, keep_fun=lambda x: False
+            )
 
         self.assertEqual(
-            sampleRandomSimple(sp.p_tree.parse("(B,(A,C,E),D);"), 5, rng=random.Random(42)),
-            sp.p_tree.parse("(B,(A,C,E),D);"),
+            sampleRandomSimple(
+                sp.p_tree.parse("(B,(A,C,E),D);").tree, 5, rng=random.Random(42)
+            ),
+            sp.p_tree.parse("(B,(A,C,E),D);").tree,
         )
         self.assertEqual(
-            sampleRandomSimple(sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)),
-            sp.p_tree.parse("(B,(A,C,E),D);"),
+            sampleRandomSimple(
+                sp.p_tree.parse("(B,(A,C,E),D);").tree, 10, rng=random.Random(42)
+            ),
+            sp.p_tree.parse("(B,(A,C,E),D);").tree,
         )
         self.assertEqual(
-            sampleRandomSimple(sp.p_tree.parse("(B,(A,C,E),D);"), 10, rng=random.Random(42)),
-            sp.p_tree.parse("(B,(A,C,E),D);"),
+            sampleRandomSimple(
+                sp.p_tree.parse("(B,(A,C,E),D);").tree, 10, rng=random.Random(42)
+            ),
+            sp.p_tree.parse("(B,(A,C,E),D);").tree,
         )
         self.assertEqual(
-            sampleRandomSimple(sp.p_tree.parse("(B,(A,C,E),D);"), 2, rng=random.Random(42)),
-            sp.p_tree.parse("(B,D);"),
+            sampleRandomSimple(
+                sp.p_tree.parse("(B,(A,C,E),D);").tree, 2, rng=random.Random(42)
+            ),
+            sp.p_tree.parse("(B,D);").tree,
         )
 
     def test_sampleParaphyletic(self):
         fork = sp.p_tree.parse(
             "(X1|H,(X2|H,(X3|H,(X4|H,((Y1|H,(Y2|H,(Y3|H,(Y4|H,Y5|H)))),X6|S)))));"
-        )
+        ).tree
         fork = factorByField(fork, field=2)
 
         self.assertEqual(
             sampleParaphyletic(fork, proportion=0.3, keep=["S"], minTips=2, seed=42),
-            sp.p_tree.parse("(X1|H,(X4|H,((Y2|H,Y3|H),X6|S)));"),
+            sp.p_tree.parse("(X1|H,(X4|H,((Y2|H,Y3|H),X6|S)));").tree,
         )
 
     def test_distribute(self):
@@ -315,7 +491,9 @@ class TestALgorithms(unittest.TestCase):
         self.assertEqual(distribute(1, 2, [0, 10]), [0, 1])
 
     def test_sampleN(self):
-        self.assertEqual(str(sampleN(sp.p_tree.parse("(B,(A,C,E),D);"), 2)), "(B,A)")
+        self.assertEqual(
+            str(sampleN(sp.p_tree.parse("(B,(A,C,E),D);").tree, 2)), "(B,A)"
+        )
 
 
 if __name__ == "__main__":
