@@ -45,10 +45,13 @@ def nexus(tree):
 
     def _fun(b, x):
         if x.isLeaf:
+          # if colors were set by grep, they will be stored here and they should over-ride the default colors
           if x.color:
             color = x.data.color
+          # colors from the input nexus file
           elif x.label in tree.colmap:
             color = tree.colmap[x.label]
+          # no colors are available
           else:
             color = ""
           b.append((x.label, color))

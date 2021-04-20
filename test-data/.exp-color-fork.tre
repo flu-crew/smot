@@ -1,0 +1,21 @@
+#NEXUS
+begin taxa;
+	dimensions ntax=10;
+	taxlabels
+	'X1|H'[&!color=#009900]
+	'X2|H'[&!color=#990000]
+	'X3|H'[&!color=#990000]
+	'X4|H'[&!color=#990000]
+	'X6|S'[&!color=#990000]
+	'Y1|H'
+	'Y2|H'
+	'Y3|H'
+	'Y4|H'
+	'Y5|H'
+;
+end;
+
+begin trees;
+	tree tree_1 = [&R] (X1|H,(X2|H,(X3|H,(X4|H,((Y1|H,(Y2|H,(Y3|H,(Y4|H,Y5|H)))),X6|S)))));
+end;
+

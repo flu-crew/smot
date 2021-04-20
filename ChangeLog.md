@@ -1,6 +1,10 @@
 0.9.0 [2021-04-xx]
 ==================
 
+ * Add `color` command
+
+   `smot color -p "swine" "#FFA500" -p "2020-" "#00FF00" my.tre > color.tre`
+
  * Print to nexus by default, preserving figtree colors and settings, with
    `--newick` option for printing raw newick trees.
 

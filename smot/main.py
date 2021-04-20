@@ -528,6 +528,43 @@ def grep(pattern, tree, invert_match, perl, newick, file):
         print(sf.nexus(tree))
 
 
+@click.command()
+@click.option("-p", "--pattern", nargs=2, multiple=True)
+@click.option(
+    "-P", "--perl", is_flag=True, help="Interpret the pattern as a regular expression"
+)
+@dec_tree
+def color(pattern, perl, tree):
+    """
+    Color the tips on a tree.
+
+    smot color -p "swine" "#FFA500" -p "2020-" "#00FF00" my.tre > color.tre
+    """
+    import smot.algorithm as alg
+    import re
+
+    tree = read_tree(tree)
+
+    def _fun(b, x):
+        if x.isLeaf:
+            b.append(x.label)
+        return b
+
+    tips = alg.treefold(tree.tree, _fun, [])
+
+    for (pat_str, col) in pattern:
+        if perl:
+            pat = re.compile(pat_str)
+            matcher = lambda x: re.search(pat, x)
+        else:
+            matcher = lambda x: pat_str in x
+        for tip in tips:
+            if matcher(tip):
+                tree.colmap[tip] = col
+
+    print(sf.nexus(tree))
+
+
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
@@ -553,6 +590,7 @@ cli.add_command(sample)
 cli.add_command(factor)
 cli.add_command(tipsed)
 cli.add_command(grep)
+cli.add_command(color)
 
 
 def main():
