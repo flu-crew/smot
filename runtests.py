@@ -6,6 +6,7 @@ from smot.algorithm import *
 import parsec as psc
 import unittest
 import random
+from smot.format import newick, nexus
 
 
 class TestParsers(unittest.TestCase):
@@ -157,7 +158,7 @@ class TestParsers(unittest.TestCase):
             ]
         )
         self.assertEqual(
-            sp.p_nexus_section.parse(tree_section)[1].newick(), "(B,(A,C,E),D);"
+            newick(sp.p_nexus_section.parse(tree_section)[1]), "(B,(A,C,E),D);"
         )
 
         nexus_file = "\n".join(
@@ -296,17 +297,17 @@ class TestParsers(unittest.TestCase):
 class TestStringify(unittest.TestCase):
     def test_stringify(self):
         s = "(B|a,(A|b,C|b,E|b),D|c);"
-        self.assertEqual(sp.p_tree.parse(s).newick(), s)
+        self.assertEqual(newick(sp.p_tree.parse(s)), s)
 
     def test_string_complex(self):
         s = """("that's cool"[&!color=#000000]:0.3);"""
-        self.assertEqual(sp.p_tree.parse(s).newick(), s)
+        self.assertEqual(newick(sp.p_tree.parse(s)), s)
 
         s = """(A:3);"""
-        self.assertEqual(sp.p_tree.parse(s).newick(), s)
+        self.assertEqual(newick(sp.p_tree.parse(s)), s)
 
         s = """('that"s !@#$%^&)(*&^[]cool'[&!color=#000000]:0.3);"""
-        self.assertEqual(sp.p_tree.parse(s).newick(), s)
+        self.assertEqual(newick(sp.p_tree.parse(s)), s)
 
 
 class TestALgorithms(unittest.TestCase):
@@ -492,7 +493,7 @@ class TestALgorithms(unittest.TestCase):
 
     def test_sampleN(self):
         self.assertEqual(
-            str(sampleN(sp.p_tree.parse("(B,(A,C,E),D);").tree, 2)), "(B,A)"
+            newick(sampleN(sp.p_tree.parse("(B,(A,C,E),D);").tree, 2)), "(B,A);"
         )
 
 

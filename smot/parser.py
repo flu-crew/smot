@@ -3,7 +3,8 @@ import re
 from smot.util import concat, rmNone, die
 from smot.classes import Node, Tree
 
-p_whitespace = p.regex(r'\s*', re.MULTILINE)
+p_whitespace = p.regex(r"\s*", re.MULTILINE)
+
 
 def p_parens(parser):
     return p.string("(") >> parser << p.string(")")
@@ -80,7 +81,9 @@ def p_nexus():
 
 @p.generate
 def p_nexus_section():
-    tag = yield (p.regex("begin\s+") >> p.regex("[^; ]*", re.I) << p.regex("\s*;\s*\n")).parsecmap(lambda x: x.lower())
+    tag = yield (
+        p.regex("begin\s+") >> p.regex("[^; ]*", re.I) << p.regex("\s*;\s*\n")
+    ).parsecmap(lambda x: x.lower())
     if tag == "trees":
         val = yield p.many1(p_nexus_tree_line).parsecmap(dieIfMultiple)
     # The only thing I currently use the taxalist for is to extract colors. It
@@ -94,21 +97,24 @@ def p_nexus_section():
     yield p_whitespace
     return (tag, val)
 
+
 @p.generate
 def p_taxa_block():
-  yield p.regex("\tdimensions.*\n", re.I)
-  yield p.regex("\ttaxlabels\n", re.I)
-  yield p_whitespace
-  vals = yield p.many1((p_label + p.optional(p_format)) << p_whitespace)
-  yield p.string(";")
-  yield p_whitespace
-  return make_tip_color_map(vals)
+    yield p.regex("\tdimensions.*\n", re.I)
+    yield p.regex("\ttaxlabels\n", re.I)
+    yield p_whitespace
+    vals = yield p.many1((p_label + p.optional(p_format)) << p_whitespace)
+    yield p.string(";")
+    yield p_whitespace
+    return make_tip_color_map(vals)
+
 
 @p.generate
 def p_nexus_tree_line():
-  yield p.regex("\t\s*tree\s*[^ ]+\s*=[^(]*", re.I)
-  tree = yield p_newick << p.string("\n")
-  return tree
+    yield p.regex("\t\s*tree\s*[^ ]+\s*=[^(]*", re.I)
+    tree = yield p_newick << p.string("\n")
+    return tree
+
 
 def make_tip_color_map(xs):
     color_map = dict()
@@ -132,5 +138,6 @@ def dieIfMultiple(xs):
         )
     else:
         die(f"Expected a single entry in this NEXUS file, found {len(xs)}")
+
 
 p_tree = p_nexus ^ p_newick.parsecmap(Tree)

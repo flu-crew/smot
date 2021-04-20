@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 from smot.util import die
+import smot.format as sf
 
 INT_SENTINEL = 9999
 
@@ -92,21 +93,18 @@ def factorTree(
             )
         nodes = alg.factorByField(node, field, default=default)
     elif factor_by_capture is not None:
-        node = alg.factorByCapture(
-            node, pat=factor_by_capture, default=default
-        )
+        node = alg.factorByCapture(node, pat=factor_by_capture, default=default)
     elif factor_by_table is not None:
-        node = alg.factorByTable(
-            node, filename=factor_by_table, default=default
-        )
+        node = alg.factorByTable(node, filename=factor_by_table, default=default)
     node = alg.setFactorCounts(node)
     return node
 
 
 def read_tree(treefile):
     from smot.parser import p_tree
+
     rawtree = treefile.readlines()
-    rawtree = ''.join(rawtree)
+    rawtree = "".join(rawtree)
     tree = p_tree.parse(rawtree)
     return tree
 
@@ -160,6 +158,12 @@ dec_proportion = click.option(
     help="The proportion of tips in a clade to keep",
 )
 
+dec_newick = click.option(
+    "--newick",
+    is_flag=True,
+    help="Write output in simple newick format (tip colors and metadata will be lost)",
+)
+
 dec_scale = click.option(
     "-s",
     "--scale",
@@ -206,6 +210,7 @@ dec_keep_regex = click.option(
 )
 @dec_max_tips
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
+@dec_newick
 @dec_tree
 def equal(
     factor_by_capture,
@@ -215,6 +220,7 @@ def equal(
     default,
     max_tips,
     zero,
+    newick,
     tree,
 ):
     import smot.algorithm as alg
@@ -228,7 +234,11 @@ def equal(
         default=default,
     )
     tree.tree = alg.sampleContext(tree.tree, keep=keep, maxTips=max_tips)
-    print(tree.newick())
+
+    if newick:
+        print(sf.newick(tree))
+    else:
+        print(sf.nexus(tree))
 
 
 @click.command(
@@ -244,6 +254,7 @@ def equal(
 @dec_proportion
 @dec_scale
 @dec_seed
+@dec_newick
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_tree
 def prop(
@@ -257,6 +268,7 @@ def prop(
     proportion,
     scale,
     seed,
+    newick,
     zero,
     tree,
 ):
@@ -282,7 +294,11 @@ def prop(
         minTips=min_tips,
         seed=seed,
     )
-    print(tree.newick())
+
+    if newick:
+        print(sf.newick(tree))
+    else:
+        print(sf.nexus(tree))
 
 
 @click.command(
@@ -298,6 +314,7 @@ def prop(
 @dec_proportion
 @dec_scale
 @dec_seed
+@dec_newick
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_tree
 def para(
@@ -311,6 +328,7 @@ def para(
     proportion,
     scale,
     seed,
+    newick,
     zero,
     tree,
 ):
@@ -336,7 +354,11 @@ def para(
         minTips=min_tips,
         seed=seed,
     )
-    print(tree.newick())
+
+    if newick:
+        print(sf.newick(tree))
+    else:
+        print(sf.nexus(tree))
 
 
 @click.command(
@@ -364,6 +386,7 @@ def para(
     default=False,
     help="Infer factors by distance on the tree to the nearest label",
 )
+@dec_newick
 @dec_tree
 def factor(
     method,
@@ -373,6 +396,7 @@ def factor(
     default,
     impute,
     patristic,
+    newick,
     tree,
 ):
     import smot.algorithm as alg
@@ -421,15 +445,20 @@ def factor(
             return x
 
         tree.tree = alg.treemap(tree.tree, _fun)
-        print(tree.newick())
+
+        if newick:
+            print(sf.newick(tree))
+        else:
+            print(sf.nexus(tree))
 
 
 #      smot tipsed <pattern> <replacement> [<filename>]
 @click.command(help="Search and replace patterns in tip labels")
 @click.argument("PATTERN", type=str)
 @click.argument("REPLACEMENT", type=str)
+@dec_newick
 @dec_tree
-def tipsed(pattern, replacement, tree):
+def tipsed(pattern, replacement, newick, tree):
     import smot.algorithm as alg
     import re
 
@@ -442,7 +471,11 @@ def tipsed(pattern, replacement, tree):
 
     tree = read_tree(tree)
     tree.tree = alg.treemap(tree.tree, fun_)
-    print(tree.newick())
+
+    if newick:
+        print(sf.newick(tree))
+    else:
+        print(sf.nexus(tree))
 
 
 @click.command(help="Prune a tree to preserve only the tips with that match a pattern")
@@ -459,8 +492,9 @@ def tipsed(pattern, replacement, tree):
     is_flag=True,
     help="Read patterns from a file instead of a set string",
 )
+@dec_newick
 @dec_tree
-def grep(pattern, tree, invert_match, perl, file):
+def grep(pattern, tree, invert_match, perl, newick, file):
     import smot.algorithm as alg
     import re
 
@@ -487,19 +521,11 @@ def grep(pattern, tree, invert_match, perl, file):
 
     tree = read_tree(tree)
     tree.tree = alg.clean(alg.treecut(tree.tree, fun_))
-    print(tree.newick())
 
-
-#      smot clean [<filename>]
-@click.command(
-    help="Clean and sort the tree. Nodes with single children are removed. Branch lengths are added (defaulting to 0). The tree is sorted (the topology is NOT changed and no root is added)."
-)
-@dec_tree
-def clean(tree):
-    import smot.algorithm as alg
-
-    tree = read_tree(tree)
-    alg.clean(tree.tree).newick()
+    if newick:
+        print(sf.newick(tree))
+    else:
+        print(sf.nexus(tree))
 
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
@@ -527,7 +553,6 @@ cli.add_command(sample)
 cli.add_command(factor)
 cli.add_command(tipsed)
 cli.add_command(grep)
-cli.add_command(clean)
 
 
 def main():

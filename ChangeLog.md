@@ -1,9 +1,18 @@
 0.9.0 [2021-04-xx]
 ==================
 
+ * Print to nexus by default, preserving figtree colors and settings, with
+   `--newick` option for printing raw newick trees.
+
  * Remove `plot`, `convert`, and `random` commands and the the `biopython`
    dependency. These commands were not well-supported and their dependency was
    very heavy. Use phylomander or dedicated plotting packages instead.
+
+ * Remove `clean` function - I may bring this back in the future, but at the
+   moment there isn't an obvious use-case for `clean`.
+
+ * Add support for parsing metadata from and writing Nexus - the main need for
+   this is to properly handle tip colors and preserve metadata.
 
 0.8.2 [2021-04-13]
 ==================
