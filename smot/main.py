@@ -534,7 +534,7 @@ def grep(pattern, tree, invert_match, perl, newick, file):
     "-P", "--perl", is_flag=True, help="Interpret the pattern as a regular expression"
 )
 @dec_tree
-def color(pattern, perl, tree):
+def leaf(pattern, perl, tree):
     """
     Color the tips on a tree.
 
@@ -564,14 +564,24 @@ def color(pattern, perl, tree):
 
     print(sf.nexus(tree))
 
+@click.command(name="mono")
+@dec_tree
+def mono_color_cmd(tree):
+  "Color a tree by monophyletic factor"
+  pass
+
+@click.command(name="para")
+@dec_tree
+def para_color_cmd(tree):
+  "Color a tree by paraphyletic factor"
+  pass
+
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-
 
 @click.group(help="Simple Manipulation Of Trees", context_settings=CONTEXT_SETTINGS)
 def cli():
     pass
-
 
 @click.group(
     help="Subsample the tree using various methods. The details of the sampling algorithms differ, but they all start by adding 0 or 1 labels (or factors) to each tip in the tree. These factors are assigned in 1 of 3 ways, described in the --factor-by-capture, --factor-by-field, and --factor-by-table options. Once the factors have been determined, we ascend from tip to root recording the set of all descendent factors in each node. Thus the ancestral node of a monophyletic subtree, where all leaves have the same factor (or no factor), will store a set of exactly one factor. The resulting factored tree is the starting data structure for each of the sampling algorithms.",
@@ -580,10 +590,26 @@ def cli():
 def sample():
     pass
 
-
 sample.add_command(equal)
 sample.add_command(prop)
 sample.add_command(para)
+
+@click.group()
+def branch():
+  "Color the branches of a tree"
+  pass
+
+branch.add_command(mono_color_cmd)
+branch.add_command(para_color_cmd)
+
+@click.group(
+    help="Color the tips or branches. The coloring options are highly opinionated. Leaf colors are based on patterns inferred from leaf labels. They are generally independent of the leaf context within the tree. There is no direct way to color leafs by clade (and I don't think there should be). Group coloring should be done at the branch color level. Branch coloring is explicitly phylogenetic - you may color branches that monophyletic or paraphyletic for a given factor. There is no simple way to color a particular branch (and why would you want to do that anyway). So, follow my tree coloring dogma and everything will be fine.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def color():
+    pass
+color.add_command(leaf)
+color.add_command(branch)
 
 cli.add_command(tips)
 cli.add_command(sample)

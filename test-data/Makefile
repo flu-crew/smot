@@ -72,6 +72,6 @@ all:
 	diff a.tre .exp-grep.tre
 	rm a.tre
 	# check coloring
-	smot color -p "X." "#990000" -p "X1" "#009900" -P fork.tre > a
+	smot color leaf -p "X." "#990000" -p "X1" "#009900" -P fork.tre > a
 	diff a .exp-color-fork.tre
 	rm a

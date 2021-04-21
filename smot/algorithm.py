@@ -550,3 +550,9 @@ def sampleProportional(
 
     node = setFactorCounts(node)
     return clean(_sampleProportional(node))
+
+def monophyleticCollapse(node):
+  pass
+
+def paraphyleticCollapse(node):
+  pass
