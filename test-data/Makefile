@@ -87,3 +87,7 @@ all:
 	smot color branch para --factor-by-capture="(1B.[^|]*)" 1B.tre > a
 	diff .exp-1B-mapcolor-para.tre a
 	rm a
+	# color removal
+	smot color branch mono --factor-by-capture="(1B\.[^|]*)" --colormap all-colors.txt 1B.tre | smot color leaf -p CVV "#FF0000" | smot color rm --newick > a
+	diff 1B.tre a
+	rm a

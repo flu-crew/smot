@@ -1,7 +1,15 @@
-0.10.0 [2021-04-21]
+0.12.0 [2021-04-xx]
+===================
+
+ * Add `color rm` to remove all coloring annotations, with the `--newick`
+   option, this also clears all metadata (e.g., FigTree annotations)
+
+0.11.0 [2021-04-21]
 ===================
 
  * Add monophyletic and paraphyletic branch coloring
+
+ [FYI - due to ghosts in pyp, v0.10.0 is gone]
 
 0.9.0 [2021-04-20]
 ==================

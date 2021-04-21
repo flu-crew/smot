@@ -113,9 +113,13 @@ dec_tree = click.argument("TREE", default=sys.stdin, type=click.File())
 
 
 #      smot tips [<filename>]
-@click.command(help="Print the tree tip labels")
+@click.command()
 @dec_tree
 def tips(tree):
+    """
+    Print the tree tip labels. The order of tips matches the order in the tree
+    (top-to-bottom).
+    """
     import smot.algorithm as alg
 
     tree = read_tree(tree)
@@ -200,9 +204,7 @@ dec_keep_regex = click.option(
 )
 
 
-@click.command(
-    help="Equal sampling. Descend from root to tip. At each node, determine if each subtree contains a single factor. If a subtree is not monophyletic, recurse into the subtree. If the subtree is monophyletic, then select up to N tips (from the --max-tips argument) from the subtree. The selection of tips is deterministic but dependent on the ordering of leaves. To sample a subtree, an equal number of tips is sampled from each descendent subtree, and so on recursively down to the tips. The resulting downsampled subtree captures the depth of the tree, but is not representative of the tree's breadth. That is, if N=6 and a tree splits into two subtrees, one with 3 tips and one with 300 tips, still 3 tips will be sampled from each branch."
-)
+@click.command()
 @factoring
 @dec_keep
 @click.option(
@@ -223,6 +225,19 @@ def equal(
     newick,
     tree,
 ):
+    """
+    Equal sampling. Descend from root to tip. At each node, determine if each
+    subtree contains a single factor. If a subtree is not monophyletic, recurse
+    into the subtree. If the subtree is monophyletic, then select up to N tips
+    (from the --max-tips argument) from the subtree. The selection of tips is
+    deterministic but dependent on the ordering of leaves. To sample a subtree,
+    an equal number of tips is sampled from each descendent subtree, and so on
+    recursively down to the tips. The resulting downsampled subtree captures
+    the depth of the tree, but is not representative of the tree's breadth.
+    That is, if N=6 and a tree splits into two subtrees, one with 3 tips and
+    one with 300 tips, still 3 tips will be sampled from each branch.
+    """
+
     import smot.algorithm as alg
 
     tree = read_tree(tree)
@@ -241,9 +256,7 @@ def equal(
         print(sf.nexus(tree))
 
 
-@click.command(
-    help="Proportional sampling. Randomly sample p (0 to 1, from --proportion) tips from each monophyletic (relative to factors) subtree. Retain at least N tips in each branch (--min-tips)."
-)
+@click.command()
 @factoring
 @dec_keep
 @dec_keep_regex
@@ -272,6 +285,12 @@ def prop(
     zero,
     tree,
 ):
+    """
+    Proportional sampling. Randomly sample p (0 to 1, from --proportion) tips
+    from each monophyletic (relative to factors) subtree. Retain at least N
+    tips in each branch (--min-tips).
+    """
+
     import smot.algorithm as alg
 
     if not proportion and not scale:
@@ -301,9 +320,7 @@ def prop(
         print(sf.nexus(tree))
 
 
-@click.command(
-    help="Paraphyletic sampling. The sampling algorithm starts at the root and descends to the tips. At each node, we store monophyletic subtrees in a list and descend into polyphyletic ones (whose leaves have multiple factors). If we reach a tip or encounter a monophyletic child of a different factor than the stored subtrees, then we stop and sample from all tips in the stored trees and initialize a new list with the new monophyletic child."
-)
+@click.command()
 @factoring
 @dec_keep
 @dec_keep_regex
@@ -332,6 +349,16 @@ def para(
     zero,
     tree,
 ):
+    """
+    Paraphyletic sampling. The sampling algorithm starts at the root and
+    descends to the tips. At each node, we store monophyletic subtrees in a
+    list and descend into polyphyletic ones (whose leaves have multiple
+    factors). If we reach a tip or encounter a monophyletic child of a
+    different factor than the stored subtrees, then we stop and sample from all
+    tips in the stored trees and initialize a new list with the new
+    monophyletic child.
+    """
+
     import smot.algorithm as alg
 
     if not proportion and not scale:
@@ -361,9 +388,7 @@ def para(
         print(sf.nexus(tree))
 
 
-@click.command(
-    help="Impute, annotate with, and/or tabulate factors. The --impute option will fill in missing factors in monophyletic branches. This is useful, for example, for inferring clades given a few references in a tree. There are three modes: 'table' prints a TAB-delimited table of tip names and factors, 'prepend' adds the factor to the beginning of the tiplabel (delimited with '|'), 'append' adds it to the end."
-)
+@click.command()
 @click.argument(
     "method", type=click.Choice(["table", "prepend", "append"], case_sensitive=False)
 )
@@ -399,6 +424,15 @@ def factor(
     newick,
     tree,
 ):
+    """
+    Impute, annotate with, and/or tabulate factors. The --impute option will
+    fill in missing factors in monophyletic branches. This is useful, for
+    example, for inferring clades given a few references in a tree. There are
+    three modes: 'table' prints a TAB-delimited table of tip names and factors,
+    'prepend' adds the factor to the beginning of the tiplabel (delimited with
+    '|'), 'append' adds it to the end.
+    """
+
     import smot.algorithm as alg
 
     tree = read_tree(tree)
@@ -453,12 +487,16 @@ def factor(
 
 
 #      smot tipsed <pattern> <replacement> [<filename>]
-@click.command(help="Search and replace patterns in tip labels")
+@click.command()
 @click.argument("PATTERN", type=str)
 @click.argument("REPLACEMENT", type=str)
 @dec_newick
 @dec_tree
 def tipsed(pattern, replacement, newick, tree):
+    """
+    Search and replace patterns in tip labels.
+    """
+
     import smot.algorithm as alg
     import re
 
@@ -478,7 +516,7 @@ def tipsed(pattern, replacement, newick, tree):
         print(sf.nexus(tree))
 
 
-@click.command(help="Prune a tree to preserve only the tips with that match a pattern")
+@click.command()
 @click.argument("PATTERN", type=str)
 @click.option(
     "-v", "--invert-match", is_flag=True, help="Keep all leafs NOT matching the pattern"
@@ -495,6 +533,10 @@ def tipsed(pattern, replacement, newick, tree):
 @dec_newick
 @dec_tree
 def grep(pattern, tree, invert_match, perl, newick, file):
+    """
+    Prune a tree to preserve only the tips with that match a pattern.
+    """
+
     import smot.algorithm as alg
     import re
 
@@ -666,6 +708,35 @@ def para_color_cmd(**kwargs):
     """
     colorBranches(is_para=True, **kwargs)
 
+@click.command(name="rm")
+@click.option(
+    "--newick",
+    is_flag=True,
+    help="Write output in newick format (metadata will be lost)",
+)
+@dec_tree
+def rm_color(newick, tree):
+    """
+    Remove all color annotations from a tree
+    """
+    import smot.algorithm as alg
+
+    tree = read_tree(tree)
+    tree.colmap = dict()
+
+    def _fun(d):
+        if d.form and "!color" in d.form: 
+          del d.form["!color"]
+        return d 
+
+    tree.tree = alg.treemap(tree.tree, _fun)
+
+    if newick:
+        print(sf.newick(tree))
+    else:
+        print(sf.nexus(tree))
+
+
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -675,11 +746,20 @@ def cli():
     pass
 
 
-@click.group(
-    help="Subsample the tree using various methods. The details of the sampling algorithms differ, but they all start by adding 0 or 1 labels (or factors) to each tip in the tree. These factors are assigned in 1 of 3 ways, described in the --factor-by-capture, --factor-by-field, and --factor-by-table options. Once the factors have been determined, we ascend from tip to root recording the set of all descendent factors in each node. Thus the ancestral node of a monophyletic subtree, where all leaves have the same factor (or no factor), will store a set of exactly one factor. The resulting factored tree is the starting data structure for each of the sampling algorithms.",
-    context_settings=CONTEXT_SETTINGS,
-)
+@click.group(context_settings=CONTEXT_SETTINGS)
 def sample():
+    """
+    Subsample the tree using various methods. The details of the sampling
+    algorithms differ, but they all start by adding 0 or 1 labels (or factors)
+    to each tip in the tree. These factors are assigned in 1 of 3 ways,
+    described in the --factor-by-capture, --factor-by-field, and
+    --factor-by-table options. Once the factors have been determined, we ascend
+    from tip to root recording the set of all descendent factors in each node.
+    Thus the ancestral node of a monophyletic subtree, where all leaves have
+    the same factor (or no factor), will store a set of exactly one factor. The
+    resulting factored tree is the starting data structure for each of the
+    sampling algorithms.
+    """
     pass
 
 
@@ -690,7 +770,11 @@ sample.add_command(para)
 
 @click.group()
 def branch():
-    "Color the branches of a tree. You may provide a color map; if you do not, smot will automatically map factors to colors from a color-blind friendly palette."
+    """
+    Color the branches of a tree. You may provide a color map; if you do not,
+    smot will automatically map factors to colors from a color-blind friendly
+    palette.
+    """
     pass
 
 
@@ -698,16 +782,25 @@ branch.add_command(mono_color_cmd)
 branch.add_command(para_color_cmd)
 
 
-@click.group(
-    help="Color the tips or branches. The coloring options are highly opinionated. Leaf colors are based on patterns inferred from leaf labels. They are generally independent of the leaf context within the tree. There is no direct way to color leafs by clade (and I don't think there should be). Group coloring should be done at the branch color level. Branch coloring is explicitly phylogenetic - you may color branches that monophyletic or paraphyletic for a given factor. There is no simple way to color a particular branch (and why would you want to do that anyway). So, follow my tree coloring dogma and everything will be fine.",
-    context_settings=CONTEXT_SETTINGS,
-)
+@click.group(context_settings=CONTEXT_SETTINGS)
 def color():
+    """
+    Color the tips or branches. The coloring options are highly opinionated.
+    Leaf colors are based on patterns inferred from leaf labels. They are
+    generally independent of the leaf context within the tree. There is no
+    direct way to color leafs by clade (and I don't think there should be).
+    Group coloring should be done at the branch color level. Branch coloring
+    is explicitly phylogenetic - you may color branches that monophyletic or
+    paraphyletic for a given factor. There is no simple way to color a
+    particular branch (and why would you want to do that anyway). So, follow
+    my tree coloring dogma and everything will be fine.
+    """
     pass
 
 
 color.add_command(leaf)
 color.add_command(branch)
+color.add_command(rm_color)
 
 cli.add_command(tips)
 cli.add_command(sample)
