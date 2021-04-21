@@ -79,3 +79,7 @@ all:
 	smot color branch mono --factor-by-capture="(1B\.[^|]*)" 1B.tre > a
 	diff .exp-1B-color.tre a
 	rm a
+	# color branches with colormap
+	smot color branch mono --factor-by-capture="(1B\.[^|]*)" --colormap all-colors.txt 1B.tre > a
+	diff .exp-1B-mapcolor.tre a
+	rm a
