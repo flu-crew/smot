@@ -1,7 +1,7 @@
 0.10.0 [2021-04-21]
 ===================
 
- * Add mono and para branch coloring
+ * Add monophyletic and paraphyletic branch coloring
 
 0.9.0 [2021-04-20]
 ==================

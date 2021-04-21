@@ -646,7 +646,11 @@ def colorBranches(
 @colormap_arg
 @dec_tree
 def mono_color_cmd(**kwargs):
-    "Color a tree by monophyletic factor"
+    """
+    Color a tree by monophyletic factor.
+
+    smot color branch mono --factor-by-capture="(1B\.[^|]*)" 1B.tre
+    """
     colorBranches(is_para=False, **kwargs)
 
 
@@ -655,7 +659,11 @@ def mono_color_cmd(**kwargs):
 @colormap_arg
 @dec_tree
 def para_color_cmd(**kwargs):
-    "Color a tree by paraphyletic factor"
+    """
+    Color a tree by paraphyletic factor.
+
+    smot color branch para --factor-by-capture="(1B.[^|]*)" 1B.tre
+    """
     colorBranches(is_para=True, **kwargs)
 
 
