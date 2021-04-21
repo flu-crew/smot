@@ -42,8 +42,13 @@ p_number = (
 ).parsecmap(float)
 p_label = p_figtree_quote ^ p_dquoted(p_dchar) ^ p.regex("[^,:;()[\]]+")
 p_length = p.string(":") >> p_number
-p_format = p_brackets(p.regex("[^\]]*"))
 
+
+def toDict(xs):
+  return {k : v for (k,v) in xs}
+
+p_keypair = (p.regex("[^=]+") << p.string("=")) + p_label
+p_format = p_brackets(p.optional(p.string("&")) >> p.sepBy1(p_keypair, p.string(","))).parsecmap(toDict)
 p_term = (p_label + p.optional(p_format) + p.optional(p_length)).parsecmap(
     lambda x: (x[0][0], x[0][1], x[1])
 )
@@ -119,10 +124,8 @@ def p_nexus_tree_line():
 def make_tip_color_map(xs):
     color_map = dict()
     for (name, form) in xs:
-        if not form is None:
-            colors = re.findall("color=(#......)", form)
-            if colors:
-                color_map[name] = colors[0]
+        if not form is None and "!color" in form:
+            color_map[name] = form["!color"]
     return color_map
 
 

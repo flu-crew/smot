@@ -14,6 +14,11 @@ def quote(x):
         x = f"'{x}'"
     return x
 
+def quoteIf(x):
+    if set("^,:;()[]'\"").intersection(set(x)):
+        return quote(x)
+    else:
+        return x
 
 def newick(node):
     return _newick(node) + ";"
@@ -33,7 +38,8 @@ def _newick(node):
             label = quote(label)
         s += label
     if node.data.form:
-        s += "[" + node.data.form + "]"
+        form_str = ",".join([k + "=" + quoteIf(v) for (k,v) in node.data.form.items()])
+        s += "[&" + form_str + "]"
     if node.data.length is not None:
         s += ":" + "{:0.3g}".format(node.data.length)
     return s
@@ -46,9 +52,10 @@ def nexus(tree):
 
     def _fun(b, x):
         if x.isLeaf:
-            # if colors were set by grep, they will be stored here and they should over-ride the default colors
-            if x.color:
-                color = x.data.color
+            # if colors were set by grep, they will be stored here and they
+            # should over-ride the default colors
+            if x.labelColor:
+                color = x.data.labelColor
             # colors from the input nexus file
             elif x.label in tree.colmap:
                 color = tree.colmap[x.label]

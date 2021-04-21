@@ -63,38 +63,35 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(sp.p_length.parse(":0.41"), 0.41)
 
     def test_format(self):
-        self.assertEqual(sp.p_format.parse("[&!color=#000000]"), "&!color=#000000")
-
-    def test_info(self):
-        self.assertEqual(sp.p_loop.parse("[&!color=#000000]"), "&!color=#000000")
+        self.assertEqual(sp.p_format.parse("[&!color=#000000]"), {"!color" : "#000000"})
 
     def test_term(self):
-        self.assertEqual(sp.p_term.parse("A[foo]:0.42"), ("A", "foo", 0.42))
+        self.assertEqual(sp.p_term.parse("A[&!color=#0000ff]:0.42"), ("A", {"!color" : "#0000ff"}, 0.42))
         self.assertEqual(sp.p_term.parse("A:0.42"), ("A", None, 0.42))
-        self.assertEqual(sp.p_term.parse("A[foo]"), ("A", "foo", None))
+        self.assertEqual(sp.p_term.parse("A[foo=boo]"), ("A", {"foo" : "boo"}, None))
         self.assertEqual(sp.p_term.parse("A"), ("A", None, None))
 
     def test_info(self):
-        self.assertEqual(sp.p_info.parse("A[foo]:0.42"), ("A", "foo", 0.42))
+        self.assertEqual(sp.p_info.parse("A[&!color=#0000ff]:0.42"), ("A", {"!color" : "#0000ff"}, 0.42))
         self.assertEqual(sp.p_info.parse("A:0.42"), ("A", None, 0.42))
-        self.assertEqual(sp.p_info.parse("A[foo]"), ("A", "foo", None))
+        self.assertEqual(sp.p_info.parse("A[foo=boo]"), ("A", {"foo" : "boo"}, None))
         self.assertEqual(sp.p_info.parse(""), (None, None, None))
 
     def test_leaf(self):
         self.assertEqual(
-            sp.p_leaf.parse("A[foo]:0.42"), sp.Node(label="A", form="foo", length=0.42)
+            sp.p_leaf.parse("A[foo=boo]:0.42"), sp.Node(label="A", form={"foo":"boo"}, length=0.42)
         )
 
     def test_node(self):
         self.assertEqual(
-            sp.p_node.parse("(A[foo]:0.42)Root"),
-            sp.Node(kids=[sp.Node(label="A", form="foo", length=0.42)], label="Root"),
+            sp.p_node.parse("(A[foo=boo,bar=baz]:0.42)Root"),
+            sp.Node(kids=[sp.Node(label="A", form={"foo":"boo","bar":"baz"}, length=0.42)], label="Root"),
         )
 
     def test_newick(self):
         self.assertEqual(
-            sp.p_tree.parse("(A[foo]:0.42)Root;").tree,
-            sp.Node(kids=[sp.Node(label="A", form="foo", length=0.42)], label="Root"),
+            sp.p_tree.parse("(A[foo=boo]:0.42)Root;").tree,
+            sp.Node(kids=[sp.Node(label="A", form={"foo":"boo"}, length=0.42)], label="Root"),
         )
         self.assertEqual(
             sp.p_tree.parse("(B,(A,C,E),D);").tree,

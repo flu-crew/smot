@@ -11,13 +11,16 @@ class Tree:
 class NodeData:
     def __init__(self, label=None, form=None, length=None, factor=None, isLeaf=False):
         self.label = label
-        self.form = form
+        if not form:
+          self.form = dict()
+        else:
+          self.form = form
         self.length = length
         self.factor = factor
         self.nleafs = None
         self.factorCount = None
         self.factorDist = dict()
-        self.color = None
+        self.labelColor = None
         self.isLeaf = isLeaf
 
     def __eq__(self, other):

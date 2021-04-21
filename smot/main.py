@@ -601,8 +601,7 @@ def chooseColorScheme(factors):
     else:
         die("I can't handle more than 11 colors yet")
 
-    for (factor, color) in zip(factors, colors):
-        colormap[factor] = color
+    colormap = {f : c for (f,c) in  zip(factors, colors)}
 
     return colormap
 
@@ -635,9 +634,9 @@ def colorBranches(
         _colormap = chooseColorScheme(factors)
 
     if is_para:
-        tree.tree = alg.colorPara(tree.tree, colormap)
+        tree.tree = alg.colorPara(tree.tree, colormap=_colormap)
     else:
-        tree.tree = alg.colorMono(tree.tree, colormap)
+        tree.tree = alg.colorMono(tree.tree, colormap=_colormap)
 
     print(sf.nexus(tree))
 

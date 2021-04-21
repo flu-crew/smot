@@ -75,3 +75,7 @@ all:
 	smot color leaf -p "X." "#990000" -p "X1" "#009900" -P fork.tre > a
 	diff a .exp-color-fork.tre
 	rm a
+	# color branches
+	smot color branch mono --factor-by-capture="(1B\.[^|]*)" 1B.tre > a
+	diff .exp-1B-color.tre a
+	rm a

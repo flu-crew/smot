@@ -551,10 +551,22 @@ def sampleProportional(
     node = setFactorCounts(node)
     return clean(_sampleProportional(node))
 
+def colorTree(node, color):
+  def fun_(d):
+    d.form["!color"] = color
+    return d
+
+  return treemap(node, fun_)
 
 def colorMono(node, colormap):
-    pass
+    if len(node.data.factorCount) == 1:
+      label = list(node.data.factorCount.keys())[0] 
+      if label in colormap:
+        node = colorTree(node, colormap[label])
+    else:
+      node.kids = [colorMono(kid, colormap) for kid in node.kids]
+    return node
 
 
 def colorPara(node, colormap):
-    pass
+    return colorMono(node, colormap)
