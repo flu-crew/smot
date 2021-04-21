@@ -551,8 +551,10 @@ def sampleProportional(
     node = setFactorCounts(node)
     return clean(_sampleProportional(node))
 
-def monophyleticCollapse(node):
-  pass
 
-def paraphyleticCollapse(node):
-  pass
+def colorMono(node, colormap):
+    pass
+
+
+def colorPara(node, colormap):
+    pass

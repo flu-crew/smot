@@ -564,24 +564,109 @@ def leaf(pattern, perl, tree):
 
     print(sf.nexus(tree))
 
+
+colormap_arg = click.option(
+    "-c",
+    "--colormap",
+    type=click.Path(exists=True),
+    help="A TAB-delimited, headless table with columns for factor names and hexadecimal colors",
+)
+
+
+def chooseColorScheme(factors):
+    # these colors are adapted from Paul Tol's notes here: https://personal.sron.nl/~pault/#sec:qualitative
+    if len(factors) == 2:
+        # orange and blue
+        colors = ["#FFA000", "#0000FF"]
+    elif len(factors) == 3:
+        # Paul's three
+        colors = ["#004488", "#DDAA33", "#BB5566"]
+    elif len(factors) <= 6:
+        # Paul's medium-contrast 6
+        colors = ["#5486C0", "#053275", "#E9C353", "#866503", "#E7849A", "#863144"]
+    elif len(factors) <= 11:
+        # Paul's sunset
+        colors = [
+            "#2A3789",
+            "#3A65A8",
+            "#5C95C2",
+            "#87BEDA",
+            "#E5E8C0",
+            "#FCD17A",
+            "#FAA353",
+            "#F1693C",
+            "#D32623",
+            "#91001C",
+        ]
+    else:
+        die("I can't handle more than 11 colors yet")
+
+    for (factor, color) in zip(factors, colors):
+        colormap[factor] = color
+
+    return colormap
+
+
+def colorBranches(
+    is_para, factor_by_capture, factor_by_field, factor_by_table, colormap, tree
+):
+    import smot.algorithm as alg
+
+    tree = read_tree(tree)
+
+    tree.tree = factorTree(
+        node=tree.tree,
+        factor_by_capture=factor_by_capture,
+        factor_by_field=factor_by_field,
+        factor_by_table=factor_by_table,
+    )
+    tree.tree = alg.setFactorCounts(tree.tree)
+
+    factors = sorted(list(tree.tree.data.factorCount.keys()))
+
+    _colormap = dict()
+    if colormap:
+        with open(colormap, "r") as f:
+            try:
+                _colormap = {f: c for (f, c) in [p.split("\t") for p in f.readlines()]}
+            except ValueError:
+                die("Invalid color map: expected TAB-delimited, two-column file")
+    else:
+        _colormap = chooseColorScheme(factors)
+
+    if is_para:
+        tree.tree = alg.colorPara(tree.tree, colormap)
+    else:
+        tree.tree = alg.colorMono(tree.tree, colormap)
+
+    print(sf.nexus(tree))
+
+
 @click.command(name="mono")
+@factoring
+@colormap_arg
 @dec_tree
-def mono_color_cmd(tree):
-  "Color a tree by monophyletic factor"
-  pass
+def mono_color_cmd(**kwargs):
+    "Color a tree by monophyletic factor"
+    colorBranches(is_para=False, **kwargs)
+
 
 @click.command(name="para")
+@factoring
+@colormap_arg
 @dec_tree
-def para_color_cmd(tree):
-  "Color a tree by paraphyletic factor"
-  pass
+def para_color_cmd(factor_by_capture, factor_by_field, factor_by_table, colormap, tree):
+    "Color a tree by paraphyletic factor"
+    colorBranches(is_para=True, **kwargs)
 
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
+
 @click.group(help="Simple Manipulation Of Trees", context_settings=CONTEXT_SETTINGS)
 def cli():
     pass
+
 
 @click.group(
     help="Subsample the tree using various methods. The details of the sampling algorithms differ, but they all start by adding 0 or 1 labels (or factors) to each tip in the tree. These factors are assigned in 1 of 3 ways, described in the --factor-by-capture, --factor-by-field, and --factor-by-table options. Once the factors have been determined, we ascend from tip to root recording the set of all descendent factors in each node. Thus the ancestral node of a monophyletic subtree, where all leaves have the same factor (or no factor), will store a set of exactly one factor. The resulting factored tree is the starting data structure for each of the sampling algorithms.",
@@ -590,17 +675,21 @@ def cli():
 def sample():
     pass
 
+
 sample.add_command(equal)
 sample.add_command(prop)
 sample.add_command(para)
 
+
 @click.group()
 def branch():
-  "Color the branches of a tree"
-  pass
+    "Color the branches of a tree. You may provide a color map; if you do not, smot will automatically map factors to colors from a color-blind friendly palette."
+    pass
+
 
 branch.add_command(mono_color_cmd)
 branch.add_command(para_color_cmd)
+
 
 @click.group(
     help="Color the tips or branches. The coloring options are highly opinionated. Leaf colors are based on patterns inferred from leaf labels. They are generally independent of the leaf context within the tree. There is no direct way to color leafs by clade (and I don't think there should be). Group coloring should be done at the branch color level. Branch coloring is explicitly phylogenetic - you may color branches that monophyletic or paraphyletic for a given factor. There is no simple way to color a particular branch (and why would you want to do that anyway). So, follow my tree coloring dogma and everything will be fine.",
@@ -608,6 +697,8 @@ branch.add_command(para_color_cmd)
 )
 def color():
     pass
+
+
 color.add_command(leaf)
 color.add_command(branch)
 

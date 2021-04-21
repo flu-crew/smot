@@ -16,12 +16,13 @@ def quote(x):
 
 
 def newick(node):
-  return _newick(node) + ";"
+    return _newick(node) + ";"
+
 
 def _newick(node):
     # allow input to be a Tree object
     if isinstance(node, Tree):
-      node = node.tree
+        node = node.tree
     if node.kids:
         s = "(" + ",".join([_newick(kid) for kid in node.kids]) + ")"
     else:
@@ -45,16 +46,16 @@ def nexus(tree):
 
     def _fun(b, x):
         if x.isLeaf:
-          # if colors were set by grep, they will be stored here and they should over-ride the default colors
-          if x.color:
-            color = x.data.color
-          # colors from the input nexus file
-          elif x.label in tree.colmap:
-            color = tree.colmap[x.label]
-          # no colors are available
-          else:
-            color = ""
-          b.append((x.label, color))
+            # if colors were set by grep, they will be stored here and they should over-ride the default colors
+            if x.color:
+                color = x.data.color
+            # colors from the input nexus file
+            elif x.label in tree.colmap:
+                color = tree.colmap[x.label]
+            # no colors are available
+            else:
+                color = ""
+            b.append((x.label, color))
         return b
 
     s = ["#NEXUS"]
