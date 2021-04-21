@@ -567,6 +567,20 @@ def colorMono(node, colormap):
       node.kids = [colorMono(kid, colormap) for kid in node.kids]
     return node
 
+def intersectionOfSets(xss):
+  x = set(xss[0])
+  for y in xss[1:]:
+    x = x.intersection(set(y))
+  return x
 
 def colorPara(node, colormap):
-    return colorMono(node, colormap)
+    if len(node.data.factorCount) == 1:
+      label = list(node.data.factorCount.keys())[0] 
+      if label in colormap:
+        node = colorTree(node, colormap[label])
+    else:
+      common = intersectionOfSets([k.data.factorCount.keys() for k in node.kids])
+      if len(common) == 1:
+        node = colorTree(node, colormap[list(common)[0]])
+      node.kids = [colorPara(kid, colormap) for kid in node.kids]
+    return node

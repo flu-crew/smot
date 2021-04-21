@@ -654,7 +654,7 @@ def mono_color_cmd(**kwargs):
 @factoring
 @colormap_arg
 @dec_tree
-def para_color_cmd(factor_by_capture, factor_by_field, factor_by_table, colormap, tree):
+def para_color_cmd(**kwargs):
     "Color a tree by paraphyletic factor"
     colorBranches(is_para=True, **kwargs)
 
