@@ -137,25 +137,20 @@ def factorByField(node, field, default=None, sep="|"):
 
     return factorByLabel(node, _fun)
 
+def factorByCaptureFun(name, pat, default=None):
+    if name:
+        m = re.search(pat, name)
+        if m:
+            if m.groups():
+                # take the deepest match
+                return [x for x in list(m.groups()) if x is not None][-1]
+            else:
+                return m.groups(0)
+    return default
 
 def factorByCapture(node, pat, default=None):
     pat = re.compile(pat)
-
-    def _fun(name):
-        if name:
-            m = re.search(pat, name)
-            if m:
-                if m.groups(1):
-                    if isinstance(m.groups(1), str):
-                        return m.groups(1)
-                    else:
-                        return m.groups(1)[0]
-                else:
-                    return m.groups(0)
-        return default
-
-    return factorByLabel(node, _fun)
-
+    return factorByLabel(node, lambda x: factorByCaptureFun(x, pat, default=default))
 
 def factorByTable(node, filename, default=None):
     with open(filename, "r") as f:
@@ -568,9 +563,12 @@ def colorMono(node, colormap):
     return node
 
 def intersectionOfSets(xss):
-  x = set(xss[0])
-  for y in xss[1:]:
-    x = x.intersection(set(y))
+  try:
+    x = set(xss[0])
+    for y in xss[1:]:
+      x = x.intersection(set(y))
+  except:
+    x = set()
   return x
 
 def colorPara(node, colormap):

@@ -4,6 +4,8 @@
  * Add `color rm` to remove all coloring annotations, with the `--newick`
    option, this also clears all metadata (e.g., FigTree annotations)
 
+ * Fixed bugs in regex captures and para coloring
+
 0.11.0 [2021-04-21]
 ===================
 

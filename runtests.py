@@ -341,6 +341,17 @@ class TestALgorithms(unittest.TestCase):
             [None, "B", None, "A", "C", "E", "D"],
         )
 
+    def test_factorByCapture(self):
+      self.assertEqual(factorByCaptureFun("BAD", "(A)"), "A")
+      # the first match is found
+      self.assertEqual(factorByCaptureFun("BAD", "(A)|(B)"), "B")
+      self.assertEqual(factorByCaptureFun("BAD", "(A|B)"), "B")
+      # the deepest match is found
+      self.assertEqual(factorByCaptureFun("BAD", "(B(.)|E(.))"), "A")
+      self.assertEqual(factorByCaptureFun("BAD", "((B(.)|E(.))|D(.))"), "A")
+      # default is returned when no match is obtained
+      self.assertEqual(factorByCaptureFun("BAD", "(P)", default="X"), "X")
+
     def test_factorByLabel(self):
         def _fun(name):
             try:
