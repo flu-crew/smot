@@ -1,4 +1,4 @@
-0.12.0 [2021-04-xx]
+0.12.0 [2021-04-23]
 ===================
 
  * Add `color rm` to remove all coloring annotations, with the `--newick`
