@@ -669,7 +669,7 @@ def colorBranches(
     if colormap:
         with open(colormap, "r") as f:
             try:
-                _colormap = {f: c for (f, c) in [p.split("\t") for p in f.readlines()]}
+                _colormap = {f.strip(): c.strip() for (f, c) in [p.split("\t") for p in f.readlines()]}
             except ValueError:
                 die("Invalid color map: expected TAB-delimited, two-column file")
     else:

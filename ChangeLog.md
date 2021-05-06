@@ -4,6 +4,8 @@
  * Fix KeyError raised when a factor is not in the color table, resolve by
    simply not coloring the element
 
+ * Fix tree formatting when using color maps (trim whitespace)
+
 0.12.0 [2021-04-23]
 ===================
 
