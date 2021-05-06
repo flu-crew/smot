@@ -1,3 +1,9 @@
+0.12.1 [2021-05-06]
+===================
+
+ * Fix KeyError raised when a factor is not in the color table, resolve by
+   simply not coloring the element
+
 0.12.0 [2021-04-23]
 ===================
 

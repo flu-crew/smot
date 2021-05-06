@@ -579,6 +579,10 @@ def colorPara(node, colormap):
     else:
       common = intersectionOfSets([k.data.factorCount.keys() for k in node.kids])
       if len(common) == 1:
-        node = colorTree(node, colormap[list(common)[0]])
+        try:
+          color = colormap[list(common)[0]]
+          node = colorTree(node, colormap[list(common)[0]])
+        except KeyError:
+          pass
       node.kids = [colorPara(kid, colormap) for kid in node.kids]
     return node
