@@ -14,11 +14,13 @@ def quote(x):
         x = f"'{x}'"
     return x
 
+
 def quoteIf(x):
     if set("^,:;()[]'\"").intersection(set(x)):
         return quote(x)
     else:
         return x
+
 
 def newick(node):
     return _newick(node) + ";"
@@ -38,7 +40,7 @@ def _newick(node):
             label = quote(label)
         s += label
     if node.data.form:
-        form_str = ",".join([k + "=" + quoteIf(v) for (k,v) in node.data.form.items()])
+        form_str = ",".join([k + "=" + quoteIf(v) for (k, v) in node.data.form.items()])
         s += "[&" + form_str + "]"
     if node.data.length is not None:
         s += ":" + "{:0.3g}".format(node.data.length)

@@ -55,39 +55,38 @@ all:
 	smot tips 1B.tre | grep -f patterns > b
 	diff a b
 	# clean up
-	rm a b
 	# para with keep-regex
 	smot sample para --newick --min-tips=3 -p 0.1 --seed 42 --keep-regex="(CVV|variant|accine|eference|Consensus)" --factor-by-capture="(1B[^|]*|Other-Human[^|]*)" 1B.tre > a
 	diff a .1B-para-keep.tre
-	rm a
 	# prop with keep-regex
 	smot sample prop --newick --min-tips=3 -p 0.1 --seed 42 --keep-regex="England" --factor-by-capture="(swine|human)" pdm.tre > a.tre
 	diff a.tre .pdm-prop-keep.tre
 	smot grep England a.tre | smot tips | wc -l > a
 	smot tips pdm.tre | grep England | wc -l > b
 	diff a b
-	rm a.tre a b
 	# ensure nexus data is created properly, preserving colors
 	smot grep Minnesota problem-with-grep.tre > a.tre
 	diff a.tre .exp-grep.tre
-	rm a.tre
 	# check coloring
-	smot color leaf -p "X." "#990000" -p "X1" "#009900" -P fork.tre > a
-	diff a .exp-color-fork.tre
-	rm a
+	smot color leaf -p "X." "#990000" -p "X1" "#009900" -P fork.tre > a.tre
+	diff a.tre .exp-color-fork.tre
 	# color branches
-	smot color branch mono --factor-by-capture="(1B\.[^|]*)" 1B.tre > a
-	diff .exp-1B-color.tre a
-	rm a
+	smot color branch mono --factor-by-capture="(1B\.[^|]*)" 1B.tre > a.tre
+	diff .exp-1B-color.tre a.tre
 	# color branches with colormap
-	smot color branch mono --factor-by-capture="(1B\.[^|]*)" --colormap all-colors.txt 1B.tre > a
-	diff .exp-1B-mapcolor.tre a
-	rm a
+	smot color branch mono --factor-by-capture="(1B\.[^|]*)" --colormap all-colors.txt 1B.tre > a.tre
+	diff .exp-1B-mapcolor.tre a.tre
 	# color branches with para
-	smot color branch para --factor-by-capture="(1B.[^|]*)" 1B.tre > a
-	diff .exp-1B-mapcolor-para.tre a
-	rm a
+	smot color branch para --factor-by-capture="(1B.[^|]*)" 1B.tre > a.tre
+	diff .exp-1B-mapcolor-para.tre a.tre
 	# color removal
-	smot color branch mono --factor-by-capture="(1B\.[^|]*)" --colormap all-colors.txt 1B.tre | smot color leaf -p CVV "#FF0000" | smot color rm --newick > a
-	diff 1B.tre a
-	rm a
+	smot color branch mono --factor-by-capture="(1B\.[^|]*)" --colormap all-colors.txt 1B.tre | smot color leaf -p CVV "#FF0000" | smot color rm --newick > a.tre
+	diff 1B.tre a.tre
+	# check filter
+	smot filter --factor-by-capture="(swine|human)" --none-match=Ohio --all-match=swine --remove pdm.tre > a.tre
+	diff a.tre .exp-ohio-pdm
+	smot grep human pdm.tre | smot tips | sort > a
+	smot grep human a.tre | smot tips | sort > b
+	diff a b
+	# cleanup
+	rm -f a b a.tre b.tre

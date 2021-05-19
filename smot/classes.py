@@ -12,9 +12,9 @@ class NodeData:
     def __init__(self, label=None, form=None, length=None, factor=None, isLeaf=False):
         self.label = label
         if not form:
-          self.form = dict()
+            self.form = dict()
         else:
-          self.form = form
+            self.form = form
         self.length = length
         self.factor = factor
         self.nleafs = None

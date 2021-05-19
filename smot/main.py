@@ -81,6 +81,8 @@ def factorTree(
     factor_by_field=None,
     factor_by_table=None,
     default=None,
+    impute=False,
+    patristic=False,
 ):
     import smot.algorithm as alg
 
@@ -97,6 +99,12 @@ def factorTree(
     elif factor_by_table is not None:
         node = alg.factorByTable(node, filename=factor_by_table, default=default)
     node = alg.setFactorCounts(node)
+
+    if patristic:
+        node = alg.imputePatristicFactors(node)
+    elif impute:
+        node = alg.imputeFactors(node)
+
     return node
 
 
@@ -125,12 +133,7 @@ def tips(tree):
     tree = read_tree(tree)
     tree.tree = alg.setNLeafs(tree.tree)
 
-    def _fun(b, x):
-        if x.isLeaf:
-            b.append(x.label)
-        return b
-
-    for tip in alg.treefold(tree.tree, _fun, []):
+    for tip in alg.tips(tree.tree):
         print(tip)
 
 
@@ -201,6 +204,20 @@ dec_keep_regex = click.option(
     default="",
     type=str,
     help="Keep all tips that match this pattern, these tips do not count towards downsampling quotas.",
+)
+
+dec_impute = click.option(
+    "--impute",
+    is_flag=True,
+    default=False,
+    help="Infer the monophyletic factor from context, if possible",
+)
+
+dec_patristic = click.option(
+    "--patristic",
+    is_flag=True,
+    default=False,
+    help="Infer factors by distance on the tree to the nearest label",
 )
 
 
@@ -399,18 +416,8 @@ def para(
     default=None,
     help="The name to assign to tips that do not match a factor",
 )
-@click.option(
-    "--impute",
-    is_flag=True,
-    default=False,
-    help="Infer the monophyletic factor from context, if possible",
-)
-@click.option(
-    "--patristic",
-    is_flag=True,
-    default=False,
-    help="Infer factors by distance on the tree to the nearest label",
-)
+@dec_impute
+@dec_patristic
 @dec_newick
 @dec_tree
 def factor(
@@ -442,12 +449,9 @@ def factor(
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
+        impute=impute,
+        patristic=patristic,
     )
-
-    if patristic:
-        tree.tree = alg.imputePatristicFactors(tree.tree)
-    elif impute:
-        tree.tree = alg.imputeFactors(tree.tree)
 
     # create TAB-delimited, table with columns for the tip labels and the
     # (possibly imputed) factor
@@ -570,6 +574,144 @@ def grep(pattern, tree, invert_match, perl, newick, file):
         print(sf.nexus(tree))
 
 
+@click.command(name="filter")
+# conditions used to select groups upon which an action is performed
+@click.option(
+    "--all-match", multiple=True, help="Select if all tips match this expression"
+)
+@click.option(
+    "--some-match",
+    multiple=True,
+    help="Select if one or more tips match this expression",
+)
+@click.option(
+    "--none-match", multiple=True, help="Select if no tips match this expression"
+)
+@click.option(
+    "--larger-than",
+    type=int,
+    help="Select if the number of tips is larger than or equal to this number",
+)
+@click.option(
+    "--smaller-than",
+    type=int,
+    help="Select if the number of tips is smaller than or equal to this number",
+)
+# actions
+@click.option("--remove", is_flag=True, help="Remove group if all conditions are met")
+@click.option(
+    "--color",
+    type=str,
+    help="Color the clade branches this color if all conditions are met",
+)
+@click.option(
+    "--sample",
+    type=float,
+    help="Sample this proportion (0-1) of the group if all conditions are met",
+)
+@click.option(
+    "--replace",
+    nargs=2,
+    help="Replace arg1 with arg2 in all leaf names in group if all conditions are met",
+)
+@factoring
+@dec_patristic
+@dec_seed
+@dec_newick
+@dec_tree
+def filter_cmd(
+    # conditions
+    all_match,
+    some_match,
+    none_match,
+    larger_than,
+    smaller_than,
+    # actions
+    remove,
+    color,
+    sample,
+    replace,
+    # factor methods
+    factor_by_capture,
+    factor_by_field,
+    factor_by_table,
+    # phylogenetic options
+    patristic,
+    seed,
+    # boilerplate
+    newick,
+    tree,
+):
+    """
+    An advanced tool for performaing actions (remove, color, sample, or
+    replace) on monophyletic groups that meet specified conditions (all-match,
+    some-match, etc.
+    """
+    import smot.algorithm as alg
+    import re
+
+    tree = read_tree(tree)
+    tree.tree = factorTree(
+        node=tree.tree,
+        factor_by_capture=factor_by_capture,
+        factor_by_field=factor_by_field,
+        factor_by_table=factor_by_table,
+        patristic=patristic,
+    )
+
+    def condition(node):
+        tips = alg.tips(node)
+        return (
+            (not larger_than or len(tips) > larger_than)
+            and (not smaller_than or len(tips) < smaller_than)
+            and (
+                not all_match
+                or all(
+                    [all([re.search(pat, tip) for tip in tips]) for pat in all_match]
+                )
+            )
+            and (
+                not some_match
+                or all(
+                    [any([re.search(pat, tip) for tip in tips]) for pat in some_match]
+                )
+            )
+            and (
+                not none_match
+                or all(
+                    [
+                        all([not re.search(pat, tip) for tip in tips])
+                        for pat in none_match
+                    ]
+                )
+            )
+        )
+
+    if remove:
+        action = lambda x: None
+    elif color:
+        action = lambda x: alg.colorTree(x, color)
+    elif sample:
+        action = lambda x: sampleProportional(
+            x, proportion=sample, scale=None, minTips=3, keep_regex="", seed=seed
+        )
+    elif replace:
+
+        def _fun(d):
+            d.label = re.sub(replace[0], replace[1], d.label)
+            return d
+
+        action = lambda x: alg.treemap(x, _fun)
+
+    tree.tree = alg.filterMono(tree.tree, condition=condition, action=action)
+    tree.tree = alg.clean(tree.tree)
+
+    if newick:
+        print(sf.newick(tree))
+    else:
+        print(sf.nexus(tree))
+
+
 @click.command()
 @click.option("-p", "--pattern", nargs=2, multiple=True)
 @click.option(
@@ -587,12 +729,7 @@ def leaf(pattern, perl, tree):
 
     tree = read_tree(tree)
 
-    def _fun(b, x):
-        if x.isLeaf:
-            b.append(x.label)
-        return b
-
-    tips = alg.treefold(tree.tree, _fun, [])
+    tips = alg.tips(tree.tree)
 
     for (pat_str, col) in pattern:
         if perl:
@@ -643,7 +780,7 @@ def chooseColorScheme(factors):
     else:
         die("I can't handle more than 11 colors yet")
 
-    colormap = {f : c for (f,c) in  zip(factors, colors)}
+    colormap = {f: c for (f, c) in zip(factors, colors)}
 
     return colormap
 
@@ -669,7 +806,10 @@ def colorBranches(
     if colormap:
         with open(colormap, "r") as f:
             try:
-                _colormap = {f.strip(): c.strip() for (f, c) in [p.split("\t") for p in f.readlines()]}
+                _colormap = {
+                    f.strip(): c.strip()
+                    for (f, c) in [p.split("\t") for p in f.readlines()]
+                }
             except ValueError:
                 die("Invalid color map: expected TAB-delimited, two-column file")
     else:
@@ -708,6 +848,7 @@ def para_color_cmd(**kwargs):
     """
     colorBranches(is_para=True, **kwargs)
 
+
 @click.command(name="rm")
 @click.option(
     "--newick",
@@ -725,9 +866,9 @@ def rm_color(newick, tree):
     tree.colmap = dict()
 
     def _fun(d):
-        if d.form and "!color" in d.form: 
-          del d.form["!color"]
-        return d 
+        if d.form and "!color" in d.form:
+            del d.form["!color"]
+        return d
 
     tree.tree = alg.treemap(tree.tree, _fun)
 
@@ -735,7 +876,6 @@ def rm_color(newick, tree):
         print(sf.newick(tree))
     else:
         print(sf.nexus(tree))
-
 
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
@@ -807,6 +947,7 @@ cli.add_command(sample)
 cli.add_command(factor)
 cli.add_command(tipsed)
 cli.add_command(grep)
+cli.add_command(filter_cmd)
 cli.add_command(color)
 
 

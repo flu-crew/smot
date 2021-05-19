@@ -45,10 +45,13 @@ p_length = p.string(":") >> p_number
 
 
 def toDict(xs):
-  return {k : v for (k,v) in xs}
+    return {k: v for (k, v) in xs}
+
 
 p_keypair = (p.regex("[^=]+") << p.string("=")) + p_label
-p_format = p_brackets(p.optional(p.string("&")) >> p.sepBy1(p_keypair, p.string(","))).parsecmap(toDict)
+p_format = p_brackets(
+    p.optional(p.string("&")) >> p.sepBy1(p_keypair, p.string(","))
+).parsecmap(toDict)
 p_term = (p_label + p.optional(p_format) + p.optional(p_length)).parsecmap(
     lambda x: (x[0][0], x[0][1], x[1])
 )

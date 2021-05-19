@@ -15,7 +15,7 @@ def treemap(node, fun, **kwargs):
     fun :: NodeData -> NodeData
     """
     node.data = fun(node.data, **kwargs)
-    node.kids = [treemap(k, fun, **kwargs) for k in node.kids]
+    node.kids = [treemap(k, fun, **kwargs) for k in node.kids if k is not None]
     return node
 
 
@@ -24,7 +24,7 @@ def treefold(node, fun, init, **kwargs):
     fun :: a -> NodeData -> a
     """
     x = fun(init, node.data, **kwargs)
-    for kid in node.kids:
+    for kid in [k for k in node.kids if k is not None]:
         x = treefold(kid, fun, x, **kwargs)
     return x
 
@@ -34,7 +34,7 @@ def treecut(node, fun, **kwargs):
     fun :: Node -> Node
     """
     node.kids = fun(node, **kwargs)
-    node.kids = [treecut(kid, fun, **kwargs) for kid in node.kids]
+    node.kids = [treecut(k, fun, **kwargs) for k in node.kids if k is not None]
     return node
 
 
@@ -49,7 +49,7 @@ def treepull(node, fun, **kwargs):
     if node.data.isLeaf:
         node.data = fun(node.data, [])
     else:
-        node.kids = [treepull(kid, fun, **kwargs) for kid in node.kids]
+        node.kids = [treepull(kid, fun, **kwargs) for kid in node.kids if kid is not None]
         node.data = fun(node.data, [kid.data for kid in node.kids], **kwargs)
     return node
 
@@ -68,6 +68,12 @@ def treepush(node, fun, **kwargs):
 
     return node
 
+def tips(node):
+    def _fun(b, x):
+        if x.isLeaf:
+            b.append(x.label)
+        return b
+    return treefold(node, _fun, [])
 
 def partition(xs, f):
     a = []
@@ -87,7 +93,9 @@ def clean(node, isRoot=True):
 
     def _clean(node, isRoot):
         # remove empty children
-        node.kids = [kid for kid in node.kids if kid.data.nleafs > 0]
+        node.kids = [
+            kid for kid in node.kids if kid is not None and kid.data.nleafs > 0
+        ]
         # remove all single-child nodes
         while len(node.kids) == 1:
             if node.data.length is not None and node.kids[0].data.length is not None:
@@ -137,6 +145,7 @@ def factorByField(node, field, default=None, sep="|"):
 
     return factorByLabel(node, _fun)
 
+
 def factorByCaptureFun(name, pat, default=None):
     if name:
         m = re.search(pat, name)
@@ -148,9 +157,11 @@ def factorByCaptureFun(name, pat, default=None):
                 return m.groups(0)
     return default
 
+
 def factorByCapture(node, pat, default=None):
     pat = re.compile(pat)
     return factorByLabel(node, lambda x: factorByCaptureFun(x, pat, default=default))
+
 
 def factorByTable(node, filename, default=None):
     with open(filename, "r") as f:
@@ -353,10 +364,12 @@ def distribute(count, groups, sizes=None):
 
 
 def setNLeafs(node):
+    if not node:
+      return node
     if node.data.isLeaf:
         node.data.nleafs = 1
     else:
-        node.kids = [setNLeafs(kid) for kid in node.kids]
+        node.kids = [setNLeafs(kid) for kid in node.kids if kid is not None]
         node.data.nleafs = sum(kid.data.nleafs for kid in node.kids)
     return node
 
@@ -546,43 +559,56 @@ def sampleProportional(
     node = setFactorCounts(node)
     return clean(_sampleProportional(node))
 
-def colorTree(node, color):
-  def fun_(d):
-    d.form["!color"] = color
-    return d
 
-  return treemap(node, fun_)
+def colorTree(node, color):
+    def fun_(d):
+        d.form["!color"] = color
+        return d
+
+    return treemap(node, fun_)
+
 
 def colorMono(node, colormap):
     if len(node.data.factorCount) == 1:
-      label = list(node.data.factorCount.keys())[0] 
-      if label in colormap:
-        node = colorTree(node, colormap[label])
+        label = list(node.data.factorCount.keys())[0]
+        if label in colormap:
+            node = colorTree(node, colormap[label])
     else:
-      node.kids = [colorMono(kid, colormap) for kid in node.kids]
+        node.kids = [colorMono(kid, colormap) for kid in node.kids]
     return node
 
+
+def filterMono(node, condition, action):
+    if len(node.data.factorCount) == 1:
+      if condition(node):
+        node = action(node)
+    else:
+        node.kids = [filterMono(kid, condition, action) for kid in node.kids]
+    return node
+
+
 def intersectionOfSets(xss):
-  try:
-    x = set(xss[0])
-    for y in xss[1:]:
-      x = x.intersection(set(y))
-  except:
-    x = set()
-  return x
+    try:
+        x = set(xss[0])
+        for y in xss[1:]:
+            x = x.intersection(set(y))
+    except:
+        x = set()
+    return x
+
 
 def colorPara(node, colormap):
     if len(node.data.factorCount) == 1:
-      label = list(node.data.factorCount.keys())[0] 
-      if label in colormap:
-        node = colorTree(node, colormap[label])
+        label = list(node.data.factorCount.keys())[0]
+        if label in colormap:
+            node = colorTree(node, colormap[label])
     else:
-      common = intersectionOfSets([k.data.factorCount.keys() for k in node.kids])
-      if len(common) == 1:
-        try:
-          color = colormap[list(common)[0]]
-          node = colorTree(node, colormap[list(common)[0]])
-        except KeyError:
-          pass
-      node.kids = [colorPara(kid, colormap) for kid in node.kids]
+        common = intersectionOfSets([k.data.factorCount.keys() for k in node.kids])
+        if len(common) == 1:
+            try:
+                color = colormap[list(common)[0]]
+                node = colorTree(node, colormap[list(common)[0]])
+            except KeyError:
+                pass
+        node.kids = [colorPara(kid, colormap) for kid in node.kids]
     return node
