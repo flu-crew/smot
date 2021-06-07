@@ -15,8 +15,9 @@ all:
 	smot sample para --newick --seed=42 --factor-by-field=2 --proportion=0.2 --keep="S" --min-tips=2 polytomyHS.tre > .obs-polytomyHS-para.txt
 	diff .exp-polytomyHS-para.txt .obs-polytomyHS-para.txt
 	# this should randomly sample 15 taxa of th 1591 that are in H1.tre
-	smot sample prop --proportion=0.01 --min-tips=3 --seed=42 H1.tre | smot tips > .obs-h1-hundreth-sample-prop.txt
-	diff .obs-h1-hundreth-sample-prop.txt .exp-h1-hundreth-sample-prop.txt
+	smot sample prop --proportion=0.01 --min-tips=3 --seed=42 H1.tre | smot tips | wc -l | sed 's/ //g' > a
+	echo 15 > b
+	diff a b
 	# this should proportionally sample while retaining all global clades and unknowns representatives
 	smot sample prop --newick --proportion=0.01 --min-tips=3 --seed=42 --factor-by-capture='(Other-Human[^|]*|1[ABC]\.[.0-9]*)' H1.tre > .obs-h1-factored-prop.tre
 	diff .obs-h1-factored-prop.tre .exp-h1-factored-prop.tre

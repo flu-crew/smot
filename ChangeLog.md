@@ -1,3 +1,14 @@
+0.13.2 [2021-06-xx]
+===================
+
+ [ ] Fix --factor-by-table option and documentation
+ * Add `-n NUM` option to samplers to select NUM elements from each group
+ * Fix bug in sampling from root - the two sides under root were always
+ sampled independently. With -n option, this led to twice too many selections
+ when no factoring was done. With proportional options, the bug would only
+ cause problems in the corner case where one side under root had fewer than
+ minTips tips.
+
 0.13.1 [2021-05-19]
 ===================
 

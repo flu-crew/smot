@@ -413,7 +413,7 @@ def sampleContext(node, keep=[], maxTips=5):
 
 
 def sampleParaphyletic(
-    node, proportion=None, scale=None, keep=[], keep_regex="", minTips=3, seed=None
+    node, proportion=None, scale=None, number=None, keep=[], keep_regex="", minTips=3, seed=None
 ):
     rng = random.Random(seed)
 
@@ -422,10 +422,16 @@ def sampleParaphyletic(
         def _sample(labels):
             return min(len(labels), max(minTips, math.ceil(proportion * len(labels))))
 
-    else:
+    elif scale:
 
         def _sample(labels):
             return min(len(labels), max(minTips, math.ceil(len(labels) ** scale)))
+
+    else:
+
+        def _sample(labels):
+            return min(len(labels), number)
+            
 
     def getLabels(node):
         def _collect(b, d):
@@ -522,14 +528,16 @@ def sampleParaphyletic(
 
 
 def sampleProportional(
-    node, proportion=None, scale=None, keep=[], keep_regex="", minTips=3, seed=None
+    node, proportion=None, scale=None, number=None, keep=[], keep_regex="", minTips=3, seed=None
 ):
     rng = random.Random(seed)
 
     if proportion:
         count_fun = lambda xs: max(minTips, math.floor(len(xs) * proportion))
-    else:
+    elif scale:
         count_fun = lambda xs: max(minTips, math.floor(len(xs) ** scale))
+    else:
+        count_fun = lambda xs: min(len(xs), number)
 
     if keep_regex:
         keep_fun = lambda label: re.search(keep_regex, label)
@@ -541,19 +549,16 @@ def sampleProportional(
 
     # recursive sampler
     def _sampleProportional(node):
-        newkids = []
-        for kid in node.kids:
-            nfactors = len(kid.data.factorCount)
-            if nfactors == 0:
-                newkids.append(_sample(kid))
-            elif nfactors == 1:
-                if list(kid.data.factorCount.keys())[0] in keep:
-                    newkids.append(kid)
-                else:
-                    newkids.append(_sample(kid))
-            else:
-                newkids.append(_sampleProportional(kid))
-        node.kids = newkids
+        nfactors = len(node.data.factorCount)
+        if(nfactors == 0):
+          return _sample(node)
+        elif nfactors == 1:
+          if list(node.data.factorCount.keys())[0] in keep:
+            return node
+          else:
+            node = _sample(node)
+        else:
+            node.kids = [_sampleProportional(kid) for kid in node.kids]
         return node
 
     node = setFactorCounts(node)

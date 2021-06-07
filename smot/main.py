@@ -165,6 +165,13 @@ dec_proportion = click.option(
     help="The proportion of tips in a clade to keep",
 )
 
+dec_number = click.option(
+    "-n",
+    "--number",
+    type=click.IntRange(min=0),
+    help="The total number of tips to keep from each group",
+)
+
 dec_newick = click.option(
     "--newick",
     is_flag=True,
@@ -283,6 +290,7 @@ def equal(
 @dec_min_tips
 @dec_proportion
 @dec_scale
+@dec_number
 @dec_seed
 @dec_newick
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
@@ -297,6 +305,7 @@ def prop(
     min_tips,
     proportion,
     scale,
+    number,
     seed,
     newick,
     zero,
@@ -310,8 +319,8 @@ def prop(
 
     import smot.algorithm as alg
 
-    if not proportion and not scale:
-        die("Please add either a --proportion or --scale option")
+    if not (proportion or scale or number):
+        die("Please add either a --proportion or --scale or --number option")
 
     tree = read_tree(tree)
     tree.tree = factorTree(
@@ -327,6 +336,7 @@ def prop(
         keep_regex=keep_regex,
         proportion=proportion,
         scale=scale,
+        number=number,
         minTips=min_tips,
         seed=seed,
     )
@@ -347,6 +357,7 @@ def prop(
 @dec_min_tips
 @dec_proportion
 @dec_scale
+@dec_number
 @dec_seed
 @dec_newick
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
@@ -361,6 +372,7 @@ def para(
     min_tips,
     proportion,
     scale,
+    number,
     seed,
     newick,
     zero,
@@ -378,8 +390,8 @@ def para(
 
     import smot.algorithm as alg
 
-    if not proportion and not scale:
-        die("Please add either a --proportion or --scale option")
+    if not (proportion or scale or number):
+        die("Please add either a --proportion or --scale or --number option")
 
     tree = read_tree(tree)
     tree.tree = factorTree(
@@ -395,6 +407,7 @@ def para(
         keep_regex=keep_regex,
         proportion=proportion,
         scale=scale,
+        number=number,
         minTips=min_tips,
         seed=seed,
     )
