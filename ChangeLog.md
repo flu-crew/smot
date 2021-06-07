@@ -1,7 +1,10 @@
-0.13.2 [2021-06-xx]
+0.14.1 [2021-06-xx]
+===================
+ [ ] Fix --factor-by-table option and documentation
+
+0.14.0 [2021-06-07]
 ===================
 
- [ ] Fix --factor-by-table option and documentation
  * Add `-n NUM` option to samplers to select NUM elements from each group
  * Fix bug in sampling from root - the two sides under root were always
  sampled independently. With -n option, this led to twice too many selections
