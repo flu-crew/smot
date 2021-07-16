@@ -74,6 +74,12 @@ class ListOfStringsType(click.ParamType):
 
 ListOfStrings = ListOfStringsType()
 
+dec_default = click.option(
+    "--default",
+    type=str,
+    default=None,
+    help="The name to assign to tips that do not match a factor",
+)
 
 def factorTree(
     node,
@@ -231,9 +237,7 @@ dec_patristic = click.option(
 @click.command()
 @factoring
 @dec_keep
-@click.option(
-    "--default", type=str, help="The name to assign to tips that do not match a factor"
-)
+@dec_default
 @dec_max_tips
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_newick
@@ -284,9 +288,7 @@ def equal(
 @factoring
 @dec_keep
 @dec_keep_regex
-@click.option(
-    "--default", type=str, help="The name to assign to tips that do not match a factor"
-)
+@dec_default
 @dec_min_tips
 @dec_proportion
 @dec_scale
@@ -351,9 +353,7 @@ def prop(
 @factoring
 @dec_keep
 @dec_keep_regex
-@click.option(
-    "--default", type=str, help="The name to assign to tips that do not match a factor"
-)
+@dec_default
 @dec_min_tips
 @dec_proportion
 @dec_scale
@@ -423,12 +423,7 @@ def para(
     "method", type=click.Choice(["table", "prepend", "append"], case_sensitive=False)
 )
 @factoring
-@click.option(
-    "--default",
-    type=str,
-    default=None,
-    help="The name to assign to tips that do not match a factor",
-)
+@dec_default
 @dec_impute
 @dec_patristic
 @dec_newick
@@ -628,6 +623,7 @@ def grep(pattern, tree, invert_match, perl, newick, file):
     help="Replace arg1 with arg2 in all leaf names in group if all conditions are met",
 )
 @factoring
+@dec_default
 @dec_patristic
 @dec_seed
 @dec_newick
@@ -648,6 +644,7 @@ def filter_cmd(
     factor_by_capture,
     factor_by_field,
     factor_by_table,
+    default,
     # phylogenetic options
     patristic,
     seed,
@@ -669,6 +666,7 @@ def filter_cmd(
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
+        default=default,
         patristic=patristic,
     )
 
