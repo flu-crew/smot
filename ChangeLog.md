@@ -1,6 +1,7 @@
-0.14.1 [2021-06-xx]
+0.14.1 [2021-07-xx]
 ===================
  [ ] Fix --factor-by-table option and documentation
+ * More robust color map parsing
 
 0.14.0 [2021-06-07]
 ===================

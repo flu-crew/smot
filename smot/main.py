@@ -818,9 +818,14 @@ def colorBranches(
         with open(colormap, "r") as f:
             try:
                 _colormap = {
-                    f.strip(): c.strip()
-                    for (f, c) in [p.split("\t") for p in f.readlines()]
+                    f.strip(): c.strip().upper()
+                    for (f, c) in [p.strip().split("\t") for p in f.readlines()]
                 }
+                for clade, color in _colormap.items():
+                  if color[0] != "#":
+                    _colormap[clade] = "#" + color
+                  if len(color) != 7:
+                    print('Expected colors in hexadecimal (e.g., "#AA10FF")', file=sys.stderr)
             except ValueError:
                 die("Invalid color map: expected TAB-delimited, two-column file")
     else:
