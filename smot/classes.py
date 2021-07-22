@@ -1,6 +1,3 @@
-import re
-
-
 class Tree:
     def __init__(self, tree, colmap=dict(), meta=dict()):
         self.tree = tree

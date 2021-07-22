@@ -1,8 +1,7 @@
 from smot.classes import Node
-from smot.util import log, die
+from smot.util import die
 from collections import Counter, defaultdict
 import re
-import sys
 import math
 import random
 
@@ -49,7 +48,9 @@ def treepull(node, fun, **kwargs):
     if node.data.isLeaf:
         node.data = fun(node.data, [])
     else:
-        node.kids = [treepull(kid, fun, **kwargs) for kid in node.kids if kid is not None]
+        node.kids = [
+            treepull(kid, fun, **kwargs) for kid in node.kids if kid is not None
+        ]
         node.data = fun(node.data, [kid.data for kid in node.kids], **kwargs)
     return node
 
@@ -68,12 +69,15 @@ def treepush(node, fun, **kwargs):
 
     return node
 
+
 def tips(node):
     def _fun(b, x):
         if x.isLeaf:
             b.append(x.label)
         return b
+
     return treefold(node, _fun, [])
+
 
 def partition(xs, f):
     a = []
@@ -171,8 +175,7 @@ def factorByTable(node, filename, default=None):
                 (k, v) = line.strip().split("\t")
                 factorMap[k] = v
             except ValueError:
-                print("Expected two columns in --factor-by-table file", file=sys.stderr)
-                sys.exit(1)
+                die("Expected two columns in --factor-by-table file")
 
         def _fun(name):
             if name:
@@ -274,7 +277,6 @@ def sampleN(node, n):
         return node
     if not node.kids and not n == 1:
         raise "Bug in sampleN"
-    N = sum([kid.data.nleafs for kid in node.kids])
     selection = distribute(n, len(node.kids), [kid.data.nleafs for kid in node.kids])
     node.kids = [sampleN(kid, m) for kid, m in zip(node.kids, selection) if m > 0]
     if len(node.kids) == 1:
@@ -365,7 +367,7 @@ def distribute(count, groups, sizes=None):
 
 def setNLeafs(node):
     if not node:
-      return node
+        return node
     if node.data.isLeaf:
         node.data.nleafs = 1
     else:
@@ -413,7 +415,14 @@ def sampleContext(node, keep=[], maxTips=5):
 
 
 def sampleParaphyletic(
-    node, proportion=None, scale=None, number=None, keep=[], keep_regex="", minTips=3, seed=None
+    node,
+    proportion=None,
+    scale=None,
+    number=None,
+    keep=[],
+    keep_regex="",
+    minTips=3,
+    seed=None,
 ):
     rng = random.Random(seed)
 
@@ -431,7 +440,6 @@ def sampleParaphyletic(
 
         def _sample(labels):
             return min(len(labels), number)
-            
 
     def getLabels(node):
         def _collect(b, d):
@@ -455,8 +463,7 @@ def sampleParaphyletic(
             try:
                 sample = rng.sample(sorted(list(samplers)), N)
             except ValueError:
-                log(f"Bad sample size ({N}) for population of size ({len(labels)})")
-                sys.exit(1)
+                die(f"Bad sample size ({N}) for population of size ({len(labels)})")
             return sample + keepers
 
     def _select(node, selected, paraGroup, paraFactor):
@@ -528,7 +535,14 @@ def sampleParaphyletic(
 
 
 def sampleProportional(
-    node, proportion=None, scale=None, number=None, keep=[], keep_regex="", minTips=3, seed=None
+    node,
+    proportion=None,
+    scale=None,
+    number=None,
+    keep=[],
+    keep_regex="",
+    minTips=3,
+    seed=None,
 ):
     rng = random.Random(seed)
 
@@ -550,13 +564,13 @@ def sampleProportional(
     # recursive sampler
     def _sampleProportional(node):
         nfactors = len(node.data.factorCount)
-        if(nfactors == 0):
-          return _sample(node)
+        if nfactors == 0:
+            return _sample(node)
         elif nfactors == 1:
-          if list(node.data.factorCount.keys())[0] in keep:
-            return node
-          else:
-            node = _sample(node)
+            if list(node.data.factorCount.keys())[0] in keep:
+                return node
+            else:
+                node = _sample(node)
         else:
             node.kids = [_sampleProportional(kid) for kid in node.kids]
         return node
@@ -585,8 +599,8 @@ def colorMono(node, colormap):
 
 def filterMono(node, condition, action):
     if len(node.data.factorCount) == 1:
-      if condition(node):
-        node = action(node)
+        if condition(node):
+            node = action(node)
     else:
         node.kids = [filterMono(kid, condition, action) for kid in node.kids]
     return node
@@ -611,7 +625,6 @@ def colorPara(node, colormap):
         common = intersectionOfSets([k.data.factorCount.keys() for k in node.kids])
         if len(common) == 1:
             try:
-                color = colormap[list(common)[0]]
                 node = colorTree(node, colormap[list(common)[0]])
             except KeyError:
                 pass

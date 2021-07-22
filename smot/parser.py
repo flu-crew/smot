@@ -1,6 +1,6 @@
 import parsec as p
 import re
-from smot.util import concat, rmNone, die
+from smot.util import die
 from smot.classes import Node, Tree
 
 p_whitespace = p.regex(r"\s*", re.MULTILINE)
@@ -127,7 +127,7 @@ def p_nexus_tree_line():
 def make_tip_color_map(xs):
     color_map = dict()
     for (name, form) in xs:
-        if not form is None and "!color" in form:
+        if form is not None and "!color" in form:
             color_map[name] = form["!color"]
     return color_map
 
@@ -140,7 +140,7 @@ def dieIfMultiple(xs):
         return xs[0]
     elif len(xs) == 0:
         die(
-            f"Failed to parse tree. The tree may be in an unsupported format (only Nexus and Newick are supported) or the tip labels may have strange characters or escape conventions. If you are sure this is a valid tree, send it to the maintainer and ask them to fix the smot parser."
+            "Failed to parse tree. The tree may be in an unsupported format (only Nexus and Newick are supported) or the tip labels may have strange characters or escape conventions. If you are sure this is a valid tree, send it to the maintainer and ask them to fix the smot parser."
         )
     else:
         die(f"Expected a single entry in this NEXUS file, found {len(xs)}")

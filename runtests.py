@@ -2,12 +2,11 @@
 
 import smot.parser as sp
 from smot.classes import Node
-from smot.algorithm import *
+import smot.algorithm as alg
 import parsec as psc
 import unittest
 import random
-from smot.format import newick, nexus
-
+from smot.format import newick
 
 class TestParsers(unittest.TestCase):
     def test_parens(self):
@@ -335,7 +334,7 @@ class TestALgorithms(unittest.TestCase):
             return x
 
         self.assertEqual(
-            treemap(sp.p_tree.parse("(B,(A,C,E),D);").tree, _lower),
+            alg.treemap(sp.p_tree.parse("(B,(A,C,E),D);").tree, _lower),
             sp.Node(
                 kids=[
                     sp.Node(label="b"),
@@ -357,20 +356,20 @@ class TestALgorithms(unittest.TestCase):
             return b
 
         self.assertEqual(
-            treefold(sp.p_tree.parse("(B,(A,C,E),D);").tree, _fun, []),
+            alg.treefold(sp.p_tree.parse("(B,(A,C,E),D);").tree, _fun, []),
             [None, "B", None, "A", "C", "E", "D"],
         )
 
     def test_factorByCapture(self):
-        self.assertEqual(factorByCaptureFun("BAD", "(A)"), "A")
+        self.assertEqual(alg.factorByCaptureFun("BAD", "(A)"), "A")
         # the first match is found
-        self.assertEqual(factorByCaptureFun("BAD", "(A)|(B)"), "B")
-        self.assertEqual(factorByCaptureFun("BAD", "(A|B)"), "B")
+        self.assertEqual(alg.factorByCaptureFun("BAD", "(A)|(B)"), "B")
+        self.assertEqual(alg.factorByCaptureFun("BAD", "(A|B)"), "B")
         # the deepest match is found
-        self.assertEqual(factorByCaptureFun("BAD", "(B(.)|E(.))"), "A")
-        self.assertEqual(factorByCaptureFun("BAD", "((B(.)|E(.))|D(.))"), "A")
+        self.assertEqual(alg.factorByCaptureFun("BAD", "(B(.)|E(.))"), "A")
+        self.assertEqual(alg.factorByCaptureFun("BAD", "((B(.)|E(.))|D(.))"), "A")
         # default is returned when no match is obtained
-        self.assertEqual(factorByCaptureFun("BAD", "(P)", default="X"), "X")
+        self.assertEqual(alg.factorByCaptureFun("BAD", "(P)", default="X"), "X")
 
     def test_factorByLabel(self):
         def _fun(name):
@@ -380,7 +379,7 @@ class TestALgorithms(unittest.TestCase):
                 return None
 
         self.assertEqual(
-            factorByLabel(sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, _fun),
+            alg.factorByLabel(sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, _fun),
             sp.Node(
                 kids=[
                     sp.Node(label="B|a", factor="a"),
@@ -398,13 +397,13 @@ class TestALgorithms(unittest.TestCase):
 
     def test_getLeftmost(self):
         self.assertEqual(
-            getLeftmost(sp.p_tree.parse("(B,(A,C,E),D);").tree), Node(label="B")
+            alg.getLeftmost(sp.p_tree.parse("(B,(A,C,E),D);").tree), Node(label="B")
         )
 
     def test_sampleContext(self):
         self.assertEqual(
-            sampleContext(
-                factorByField(
+            alg.sampleContext(
+                alg.factorByField(
                     sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, field=2
                 ),
                 keep=[],
@@ -420,8 +419,8 @@ class TestALgorithms(unittest.TestCase):
         )
 
         self.assertEqual(
-            sampleContext(
-                factorByField(
+            alg.sampleContext(
+                alg.factorByField(
                     sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, field=2
                 ),
                 keep=[],
@@ -443,31 +442,31 @@ class TestALgorithms(unittest.TestCase):
 
     def test_clean(self):
         self.assertEqual(
-            clean(sp.p_tree.parse("(B,((A)),D);").tree),
+            alg.clean(sp.p_tree.parse("(B,((A)),D);").tree),
             sp.p_tree.parse("(B,A,D);").tree,
         )
         self.assertEqual(
-            clean(sp.p_tree.parse("(((A)));").tree), sp.p_tree.parse("(A);").tree
+            alg.clean(sp.p_tree.parse("(((A)));").tree), sp.p_tree.parse("(A);").tree
         )
         self.assertEqual(
-            clean(sp.p_tree.parse("((((((B)),((A))))));").tree),
+            alg.clean(sp.p_tree.parse("((((((B)),((A))))));").tree),
             sp.p_tree.parse("(B,A);").tree,
         )
         self.assertEqual(
-            clean(sp.p_tree.parse("((((A,B))));").tree), sp.p_tree.parse("(A,B);").tree
+            alg.clean(sp.p_tree.parse("((((A,B))));").tree), sp.p_tree.parse("(A,B);").tree
         )
         self.assertEqual(
-            clean(sp.p_tree.parse("(((A,B)),((((C)))));").tree),
+            alg.clean(sp.p_tree.parse("(((A,B)),((((C)))));").tree),
             sp.p_tree.parse("((A,B),C);").tree,
         )
         self.assertEqual(
-            clean(sp.p_tree.parse("(B:1,((A:3):2):1,D:1);").tree),
+            alg.clean(sp.p_tree.parse("(B:1,((A:3):2):1,D:1);").tree),
             sp.p_tree.parse("(B:1,A:6,D:1);").tree,
         )
 
     def test_sampleRandom(self):
         def sampleRandomSimple(node, n, rng):
-            return sampleRandom(
+            return alg.sampleRandom(
                 node, rng, count_fun=lambda x: n, keep_fun=lambda x: False
             )
 
@@ -499,31 +498,31 @@ class TestALgorithms(unittest.TestCase):
     def test_sampleParaphyletic(self):
         fork = "(X1|H,(X2|H,(X3|H,(X4|H,((Y1|H,(Y2|H,(Y3|H,(Y4|H,Y5|H)))),X6|S)))));"
 
-        forkFac = factorByField(sp.p_tree.parse(fork).tree, field=2)
+        forkFac = alg.factorByField(sp.p_tree.parse(fork).tree, field=2)
 
         self.assertEqual(
             newick(
-                sampleParaphyletic(
+                alg.sampleParaphyletic(
                     forkFac, proportion=0.3, keep=["S"], minTips=2, seed=42
                 )
             ),
             "(X1|H,(X4|H,((Y2|H,Y3|H),X6|S)));",
         )
         self.assertEqual(
-            newick(sampleParaphyletic(sp.p_tree.parse(fork).tree, number=2, seed=46)),
+            newick(alg.sampleParaphyletic(sp.p_tree.parse(fork).tree, number=2, seed=46)),
             "(X2|H,Y2|H);",
         )
 
         nine = "(Y|x,(U|x,(I|x,(((A|y,B|y),C|y),(D|z,(E|z,F|z))))));"
 
         self.assertEqual(
-            newick(sampleParaphyletic(sp.p_tree.parse(nine).tree, number=1, seed=43)),
+            newick(alg.sampleParaphyletic(sp.p_tree.parse(nine).tree, number=1, seed=43)),
             "(A|y);",
         )
         self.assertEqual(
             newick(
-                sampleParaphyletic(
-                    factorByField(sp.p_tree.parse(nine).tree, field=2),
+                alg.sampleParaphyletic(
+                    alg.factorByField(sp.p_tree.parse(nine).tree, field=2),
                     number=1,
                     seed=43,
                 )
@@ -532,8 +531,8 @@ class TestALgorithms(unittest.TestCase):
         )
         self.assertEqual(
             newick(
-                sampleParaphyletic(
-                    factorByField(sp.p_tree.parse(nine).tree, field=2),
+                alg.sampleParaphyletic(
+                    alg.factorByField(sp.p_tree.parse(nine).tree, field=2),
                     number=2,
                     seed=43,
                 )
@@ -546,7 +545,7 @@ class TestALgorithms(unittest.TestCase):
         # sampling is across root children
         self.assertEqual(
             newick(
-                sampleProportional(
+                alg.sampleProportional(
                     sp.p_tree.parse(six).tree, proportion=0.1, minTips=2, seed=43
                 )
             ),
@@ -556,8 +555,8 @@ class TestALgorithms(unittest.TestCase):
         seven = "(O|x,(((A|y,B|y),C|y),(D|z,(E|z,F|z))));"
         self.assertEqual(
             newick(
-                sampleProportional(
-                    factorByField(sp.p_tree.parse(seven).tree, field=2),
+                alg.sampleProportional(
+                    alg.factorByField(sp.p_tree.parse(seven).tree, field=2),
                     proportion=0.1,
                     minTips=2,
                     seed=46,
@@ -568,29 +567,29 @@ class TestALgorithms(unittest.TestCase):
         # --- selection by number works for unfactored trees
         # sometimes a basal strain is selected
         self.assertEqual(
-            newick(sampleProportional(sp.p_tree.parse(seven).tree, number=1, seed=46)),
+            newick(alg.sampleProportional(sp.p_tree.parse(seven).tree, number=1, seed=46)),
             "(O|x);",
         )
         # sometimes it isn't (random)
         self.assertEqual(
-            newick(sampleProportional(sp.p_tree.parse(seven).tree, number=1, seed=44)),
+            newick(alg.sampleProportional(sp.p_tree.parse(seven).tree, number=1, seed=44)),
             "(C|y);",
         )
         # sometimes both root branches will be sampled
         self.assertEqual(
-            newick(sampleProportional(sp.p_tree.parse(seven).tree, number=3, seed=46)),
+            newick(alg.sampleProportional(sp.p_tree.parse(seven).tree, number=3, seed=46)),
             "(O|x,(C|y,F|z));",
         )
         # sometimes they won't
         self.assertEqual(
-            newick(sampleProportional(sp.p_tree.parse(seven).tree, number=3, seed=40)),
+            newick(alg.sampleProportional(sp.p_tree.parse(seven).tree, number=3, seed=40)),
             "(C|y,(D|z,E|z));",
         )
         # --- selection by number works for factored trees
         self.assertEqual(
             newick(
-                sampleProportional(
-                    factorByField(sp.p_tree.parse(seven).tree, field=2),
+                alg.sampleProportional(
+                    alg.factorByField(sp.p_tree.parse(seven).tree, field=2),
                     number=1,
                     seed=43,
                 )
@@ -599,8 +598,8 @@ class TestALgorithms(unittest.TestCase):
         )
         self.assertEqual(
             newick(
-                sampleProportional(
-                    factorByField(sp.p_tree.parse(seven).tree, field=2),
+                alg.sampleProportional(
+                    alg.factorByField(sp.p_tree.parse(seven).tree, field=2),
                     number=2,
                     seed=43,
                 )
@@ -610,36 +609,36 @@ class TestALgorithms(unittest.TestCase):
         # --- high numbers cleanly select everything
         self.assertEqual(
             newick(
-                sampleProportional(
-                    factorByField(sp.p_tree.parse(seven).tree, field=2), number=100
+                alg.sampleProportional(
+                    alg.factorByField(sp.p_tree.parse(seven).tree, field=2), number=100
                 )
             ),
             seven,
         )
         self.assertEqual(
             newick(
-                sampleProportional(
-                    factorByField(sp.p_tree.parse(seven).tree, field=2), number=100
+                alg.sampleProportional(
+                    alg.factorByField(sp.p_tree.parse(seven).tree, field=2), number=100
                 )
             ),
             seven,
         )
 
     def test_distribute(self):
-        self.assertEqual(distribute(5, 3), [2, 2, 1])
-        self.assertEqual(distribute(3, 5), [1, 1, 1, 0, 0])
-        self.assertEqual(distribute(5, 1), [5])
-        self.assertEqual(distribute(0, 2), [0, 0])
-        self.assertEqual(distribute(5, 0), [])
-        self.assertEqual(distribute(0, 0), [])
+        self.assertEqual(alg.distribute(5, 3), [2, 2, 1])
+        self.assertEqual(alg.distribute(3, 5), [1, 1, 1, 0, 0])
+        self.assertEqual(alg.distribute(5, 1), [5])
+        self.assertEqual(alg.distribute(0, 2), [0, 0])
+        self.assertEqual(alg.distribute(5, 0), [])
+        self.assertEqual(alg.distribute(0, 0), [])
         # with sizes vector
-        self.assertEqual(distribute(10, 3, [3, 100, 1]), [3, 6, 1])
-        self.assertEqual(distribute(10, 3, [3, 100, 0]), [3, 7, 0])
-        self.assertEqual(distribute(1, 2, [0, 10]), [0, 1])
+        self.assertEqual(alg.distribute(10, 3, [3, 100, 1]), [3, 6, 1])
+        self.assertEqual(alg.distribute(10, 3, [3, 100, 0]), [3, 7, 0])
+        self.assertEqual(alg.distribute(1, 2, [0, 10]), [0, 1])
 
     def test_sampleN(self):
         self.assertEqual(
-            newick(sampleN(sp.p_tree.parse("(B,(A,C,E),D);").tree, 2)), "(B,A);"
+            newick(alg.sampleN(sp.p_tree.parse("(B,(A,C,E),D);").tree, 2)), "(B,A);"
         )
 
 

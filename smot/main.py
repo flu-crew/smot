@@ -81,6 +81,7 @@ dec_default = click.option(
     help="The name to assign to tips that do not match a factor",
 )
 
+
 def factorTree(
     node,
     factor_by_capture=None,
@@ -99,7 +100,7 @@ def factorTree(
             die(
                 f"""Expected a positive integer for field --factor-by-field, got '{factor_by_field}'"""
             )
-        nodes = alg.factorByField(node, field, default=default)
+        node = alg.factorByField(node, field, default=default)
     elif factor_by_capture is not None:
         node = alg.factorByCapture(node, pat=factor_by_capture, default=default)
     elif factor_by_table is not None:
@@ -564,7 +565,7 @@ def grep(pattern, tree, invert_match, perl, newick, file):
             matcher = lambda s: re.search(regex, s)
     else:
         if invert_match:
-            matcher = lambda s: not pattern in s
+            matcher = lambda s: pattern not in s
         else:
             matcher = lambda s: pattern in s
 
@@ -703,7 +704,7 @@ def filter_cmd(
     elif color:
         action = lambda x: alg.colorTree(x, color)
     elif sample:
-        action = lambda x: sampleProportional(
+        action = lambda x: alg.sampleProportional(
             x, proportion=sample, scale=None, minTips=3, keep_regex="", seed=seed
         )
     elif replace:
@@ -822,10 +823,10 @@ def colorBranches(
                     for (f, c) in [p.strip().split("\t") for p in f.readlines()]
                 }
                 for clade, color in _colormap.items():
-                  if color[0] != "#":
-                    _colormap[clade] = "#" + color
-                  if len(color) != 7:
-                    print('Expected colors in hexadecimal (e.g., "#AA10FF")', file=sys.stderr)
+                    if color[0] != "#":
+                        _colormap[clade] = "#" + color
+                    if len(color) != 7:
+                        die('Expected colors in hexadecimal (e.g., "#AA10FF")')
             except ValueError:
                 die("Invalid color map: expected TAB-delimited, two-column file")
     else:
@@ -973,6 +974,6 @@ def main():
 
 
 if __name__ == "__main__":
-    if os.name is "posix":
+    if os.name == "posix":
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     main()

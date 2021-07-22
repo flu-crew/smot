@@ -1,6 +1,13 @@
-0.14.1 [2021-07-xx]
+0.14.2 [2021-07-xx]
 ===================
+
+ * Fix several issues found my flake8
+ [ ] Full functional documentation
  [ ] Fix --factor-by-table option and documentation
+
+0.14.1 [2021-07-19]
+===================
+
  * More robust color map parsing
 
 0.14.0 [2021-06-07]
