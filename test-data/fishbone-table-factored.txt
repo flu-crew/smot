@@ -1,0 +1,6 @@
+X1	H
+X2	H
+X3	S
+X4	S
+X5	S
+X6	S

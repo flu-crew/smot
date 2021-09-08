@@ -2,8 +2,8 @@
 ===================
 
  * Fix several issues found my flake8
+ * Fix --factor-by-table option and documentation
  [ ] Full functional documentation
- [ ] Fix --factor-by-table option and documentation
 
 0.14.1 [2021-07-19]
 ===================

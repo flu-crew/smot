@@ -89,5 +89,8 @@ all:
 	smot grep human pdm.tre | smot tips | sort > a
 	smot grep human a.tre | smot tips | sort > b
 	diff a b
+	# check factor-by-table
+	smot factor table --factor-by-table=fishbone-table.txt unfactored-fishbone.tre --impute > a
+	diff a fishbone-table-factored.txt
 	# cleanup
 	rm -f a b a.tre b.tre

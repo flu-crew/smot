@@ -159,7 +159,9 @@ def factoring(function):
     )(function)
 
     function = click.option(
-        "--factor-by-table", type=MaybeString, help="I don't even know what this is"
+        "--factor-by-table",
+        type=MaybeString,
+        help="Read factors from a TAB-delimited file (tip labels in the first column and factors in the second column)",
     )(function)
 
     return function

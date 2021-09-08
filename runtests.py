@@ -8,6 +8,7 @@ import unittest
 import random
 from smot.format import newick
 
+
 class TestParsers(unittest.TestCase):
     def test_parens(self):
         self.assertEqual(sp.p_parens(psc.digit()).parse("(1)"), "1")
@@ -453,7 +454,8 @@ class TestALgorithms(unittest.TestCase):
             sp.p_tree.parse("(B,A);").tree,
         )
         self.assertEqual(
-            alg.clean(sp.p_tree.parse("((((A,B))));").tree), sp.p_tree.parse("(A,B);").tree
+            alg.clean(sp.p_tree.parse("((((A,B))));").tree),
+            sp.p_tree.parse("(A,B);").tree,
         )
         self.assertEqual(
             alg.clean(sp.p_tree.parse("(((A,B)),((((C)))));").tree),
@@ -509,14 +511,18 @@ class TestALgorithms(unittest.TestCase):
             "(X1|H,(X4|H,((Y2|H,Y3|H),X6|S)));",
         )
         self.assertEqual(
-            newick(alg.sampleParaphyletic(sp.p_tree.parse(fork).tree, number=2, seed=46)),
+            newick(
+                alg.sampleParaphyletic(sp.p_tree.parse(fork).tree, number=2, seed=46)
+            ),
             "(X2|H,Y2|H);",
         )
 
         nine = "(Y|x,(U|x,(I|x,(((A|y,B|y),C|y),(D|z,(E|z,F|z))))));"
 
         self.assertEqual(
-            newick(alg.sampleParaphyletic(sp.p_tree.parse(nine).tree, number=1, seed=43)),
+            newick(
+                alg.sampleParaphyletic(sp.p_tree.parse(nine).tree, number=1, seed=43)
+            ),
             "(A|y);",
         )
         self.assertEqual(
@@ -567,22 +573,30 @@ class TestALgorithms(unittest.TestCase):
         # --- selection by number works for unfactored trees
         # sometimes a basal strain is selected
         self.assertEqual(
-            newick(alg.sampleProportional(sp.p_tree.parse(seven).tree, number=1, seed=46)),
+            newick(
+                alg.sampleProportional(sp.p_tree.parse(seven).tree, number=1, seed=46)
+            ),
             "(O|x);",
         )
         # sometimes it isn't (random)
         self.assertEqual(
-            newick(alg.sampleProportional(sp.p_tree.parse(seven).tree, number=1, seed=44)),
+            newick(
+                alg.sampleProportional(sp.p_tree.parse(seven).tree, number=1, seed=44)
+            ),
             "(C|y);",
         )
         # sometimes both root branches will be sampled
         self.assertEqual(
-            newick(alg.sampleProportional(sp.p_tree.parse(seven).tree, number=3, seed=46)),
+            newick(
+                alg.sampleProportional(sp.p_tree.parse(seven).tree, number=3, seed=46)
+            ),
             "(O|x,(C|y,F|z));",
         )
         # sometimes they won't
         self.assertEqual(
-            newick(alg.sampleProportional(sp.p_tree.parse(seven).tree, number=3, seed=40)),
+            newick(
+                alg.sampleProportional(sp.p_tree.parse(seven).tree, number=3, seed=40)
+            ),
             "(C|y,(D|z,E|z));",
         )
         # --- selection by number works for factored trees
