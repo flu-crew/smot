@@ -1,9 +1,9 @@
-0.14.2 [2021-07-xx]
+0.14.2 [2021-09-xx]
 ===================
 
  * Fix several issues found my flake8
  * Fix --factor-by-table option and documentation
- [ ] Full functional documentation
+ * Keep tip colors after tipsed
 
 0.14.1 [2021-07-19]
 ===================

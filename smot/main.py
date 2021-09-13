@@ -524,6 +524,7 @@ def tipsed(pattern, replacement, newick, tree):
 
     tree = read_tree(tree)
     tree.tree = alg.treemap(tree.tree, fun_)
+    tree.colmap = {re.sub(pat, replacement, k) : v for (k, v) in tree.colmap.items()}
 
     if newick:
         print(sf.newick(tree))
