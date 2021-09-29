@@ -144,6 +144,22 @@ def tips(tree):
         print(tip)
 
 
+@click.command()
+@dec_tree
+def stat(tree):
+    """
+    Display statistics for an input tree
+    """
+    import smot.algorithm as alg
+
+    tree = read_tree(tree)
+    tree.tree = alg.setNLeafs(tree.tree)
+
+    tips = list(alg.tips(tree.tree))
+
+    print(len(tips))
+
+
 def factoring(function):
     function = click.option(
         "--factor-by-capture",
@@ -963,6 +979,7 @@ color.add_command(branch)
 color.add_command(rm_color)
 
 cli.add_command(tips)
+cli.add_command(stat)
 cli.add_command(sample)
 cli.add_command(factor)
 cli.add_command(tipsed)
