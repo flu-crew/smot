@@ -2,6 +2,7 @@
 ===================
 
  * Add `stat` subcommand 
+ * Replace `sample prop` with `sample mono`. This contrasts with `para`.
 
 0.14.2 [2021-09-14]
 ===================

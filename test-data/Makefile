@@ -10,16 +10,16 @@ all:
 	diff .exp-tipsed.txt .obs-tipsed.txt
 	smot sample equal --newick --factor-by-field=2 --keep="S" --max-tips=2 --zero polytomyHS.tre > .obs-polytomyHS-equal.txt
 	diff .exp-polytomyHS-equal.txt .obs-polytomyHS-equal.txt
-	smot sample prop --newick --seed=42 --factor-by-field=2 --proportion=0.2 --keep="S" --min-tips=2 polytomyHS.tre > .obs-polytomyHS-prop.txt
+	smot sample mono --newick --seed=42 --factor-by-field=2 --proportion=0.2 --keep="S" --min-tips=2 polytomyHS.tre > .obs-polytomyHS-prop.txt
 	diff .exp-polytomyHS-prop.txt .obs-polytomyHS-prop.txt
 	smot sample para --newick --seed=42 --factor-by-field=2 --proportion=0.2 --keep="S" --min-tips=2 polytomyHS.tre > .obs-polytomyHS-para.txt
 	diff .exp-polytomyHS-para.txt .obs-polytomyHS-para.txt
 	# this should randomly sample 15 taxa of th 1591 that are in H1.tre
-	smot sample prop --proportion=0.01 --min-tips=3 --seed=42 H1.tre | smot tips | wc -l | sed 's/ //g' > a
+	smot sample mono --proportion=0.01 --min-tips=3 --seed=42 H1.tre | smot tips | wc -l | sed 's/ //g' > a
 	echo 15 > b
 	diff a b
 	# this should proportionally sample while retaining all global clades and unknowns representatives
-	smot sample prop --newick --proportion=0.01 --min-tips=3 --seed=42 --factor-by-capture='(Other-Human[^|]*|1[ABC]\.[.0-9]*)' H1.tre > .obs-h1-factored-prop.tre
+	smot sample mono --newick --proportion=0.01 --min-tips=3 --seed=42 --factor-by-capture='(Other-Human[^|]*|1[ABC]\.[.0-9]*)' H1.tre > .obs-h1-factored-prop.tre
 	diff .obs-h1-factored-prop.tre .exp-h1-factored-prop.tre
 	# set default factor to NA, then list
 	smot factor table --default=NA fishbone.tre > .obs-factor-default.txt
@@ -60,7 +60,7 @@ all:
 	smot sample para --newick --min-tips=3 -p 0.1 --seed 42 --keep-regex="(CVV|variant|accine|eference|Consensus)" --factor-by-capture="(1B[^|]*|Other-Human[^|]*)" 1B.tre > a
 	diff a .1B-para-keep.tre
 	# prop with keep-regex
-	smot sample prop --newick --min-tips=3 -p 0.1 --seed 42 --keep-regex="England" --factor-by-capture="(swine|human)" pdm.tre > a.tre
+	smot sample mono --newick --min-tips=3 -p 0.1 --seed 42 --keep-regex="England" --factor-by-capture="(swine|human)" pdm.tre > a.tre
 	diff a.tre .pdm-prop-keep.tre
 	smot grep England a.tre | smot tips | wc -l > a
 	smot tips pdm.tre | grep England | wc -l > b

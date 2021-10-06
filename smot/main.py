@@ -316,7 +316,7 @@ def equal(
 @dec_newick
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_tree
-def prop(
+def mono(
     factor_by_capture,
     factor_by_field,
     factor_by_table,
@@ -940,7 +940,7 @@ def sample():
 
 
 sample.add_command(equal)
-sample.add_command(prop)
+sample.add_command(mono)
 sample.add_command(para)
 
 
