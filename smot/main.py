@@ -105,23 +105,18 @@ def factorTree(
         node = alg.factorByCapture(node, pat=factor_by_capture, default=default)
     elif factor_by_table is not None:
         node = alg.factorByTable(node, filename=factor_by_table, default=default)
-    node = alg.setFactorCounts(node)
 
     if patristic:
         node = alg.imputePatristicFactors(node)
     elif impute:
-        node = alg.imputeFactors(node)
+        node = alg.imputeMonophyleticFactors(node)
 
     return node
 
 
 def read_tree(treefile):
-    from smot.parser import p_tree
-
-    rawtree = treefile.readlines()
-    rawtree = "".join(rawtree)
-    tree = p_tree.parse(rawtree)
-    return tree
+    from smot.parser import read_fh
+    return read_fh(treefile)
 
 
 dec_tree = click.argument("TREE", default=sys.stdin, type=click.File())
@@ -295,7 +290,7 @@ def equal(
         factor_by_table=factor_by_table,
         default=default,
     )
-    tree.tree = alg.sampleContext(tree.tree, keep=keep, maxTips=max_tips)
+    tree.tree = alg.sampleBalanced(tree.tree, keep=keep, maxTips=max_tips)
 
     if newick:
         print(sf.newick(tree))
@@ -351,7 +346,7 @@ def mono(
         factor_by_table=factor_by_table,
         default=default,
     )
-    tree.tree = alg.sampleProportional(
+    tree.tree = alg.sampleMonophyletic(
         tree.tree,
         keep=keep,
         keep_regex=keep_regex,
@@ -723,7 +718,7 @@ def filter_cmd(
     elif color:
         action = lambda x: alg.colorTree(x, color)
     elif sample:
-        action = lambda x: alg.sampleProportional(
+        action = lambda x: alg.sampleMonophyletic(
             x, proportion=sample, scale=None, minTips=3, keep_regex="", seed=seed
         )
     elif replace:
@@ -916,10 +911,11 @@ def rm_color(newick, tree):
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
+
 @click.group(help="Simple Manipulation Of Trees", context_settings=CONTEXT_SETTINGS)
 @click.version_option(__version__, "-v", "--version", message=__version__)
-def cli(version):
-      pass
+def cli():
+    pass
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)

@@ -127,13 +127,15 @@ def clean(node, isRoot=True):
 def factorByLabel(node, fun, **kwargs):
     """
     Assign factors to nodes based on the node label string
+
+    kwargs are passed to the `fun` within the `mapfun` function.
     """
 
     def mapfun(ndata, **kwargs):
         ndata.factor = fun(ndata.label, **kwargs)
         return ndata
 
-    return treemap(node, mapfun, **kwargs)
+    return setFactorCounts(treemap(node, mapfun, **kwargs))
 
 
 def factorByField(node, field, default=None, sep="|"):
@@ -202,7 +204,7 @@ def getFactor(node):
         return None
 
 
-def imputeFactors(node):
+def imputeMonophyleticFactors(node):
     def setFactors(node, factor):
         def _fun(b):
             b.factor = factor
@@ -213,7 +215,7 @@ def imputeFactors(node):
     if node.data.factorCount and isMonophyletic(node):
         node = setFactors(node, getFactor(node))
     else:
-        newkids = [imputeFactors(kid) for kid in node.kids]
+        newkids = [imputeMonophyleticFactors(kid) for kid in node.kids]
         node.kids = newkids
     return node
 
@@ -391,9 +393,9 @@ def setFactorCounts(node):
     return node
 
 
-def sampleContext(node, keep=[], maxTips=5):
+def sampleBalanced(node, keep=[], maxTips=5):
     # recursive sampler
-    def _sampleContext(node):
+    def _sampleBalanced(node):
         newkids = []
         for kid in node.kids:
             if (
@@ -405,13 +407,13 @@ def sampleContext(node, keep=[], maxTips=5):
                 else:
                     newkids.append(sampleN(kid, maxTips))
             else:
-                newkids.append(_sampleContext(kid))
+                newkids.append(_sampleBalanced(kid))
         node.kids = newkids
         return node
 
     node = setNLeafs(node)
     node = setFactorCounts(node)
-    return clean(_sampleContext(node))
+    return clean(_sampleBalanced(node))
 
 
 def sampleParaphyletic(
@@ -421,7 +423,7 @@ def sampleParaphyletic(
     number=None,
     keep=[],
     keep_regex="",
-    minTips=3,
+    minTips=1,
     seed=None,
 ):
     rng = random.Random(seed)
@@ -534,14 +536,14 @@ def sampleParaphyletic(
     return clean(treecut(node, _cull))
 
 
-def sampleProportional(
+def sampleMonophyletic(
     node,
     proportion=None,
     scale=None,
     number=None,
     keep=[],
     keep_regex="",
-    minTips=3,
+    minTips=1,
     seed=None,
 ):
     rng = random.Random(seed)
@@ -562,7 +564,7 @@ def sampleProportional(
         return sampleRandom(node=node, rng=rng, count_fun=count_fun, keep_fun=keep_fun)
 
     # recursive sampler
-    def _sampleProportional(node):
+    def _sampleMonophyletic(node):
         nfactors = len(node.data.factorCount)
         if nfactors == 0:
             return _sample(node)
@@ -572,11 +574,11 @@ def sampleProportional(
             else:
                 node = _sample(node)
         else:
-            node.kids = [_sampleProportional(kid) for kid in node.kids]
+            node.kids = [_sampleMonophyletic(kid) for kid in node.kids]
         return node
 
     node = setFactorCounts(node)
-    return clean(_sampleProportional(node))
+    return clean(_sampleMonophyletic(node))
 
 
 def colorTree(node, color):

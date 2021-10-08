@@ -401,9 +401,9 @@ class TestALgorithms(unittest.TestCase):
             alg.getLeftmost(sp.p_tree.parse("(B,(A,C,E),D);").tree), Node(label="B")
         )
 
-    def test_sampleContext(self):
+    def test_sampleBalanced(self):
         self.assertEqual(
-            alg.sampleContext(
+            alg.sampleBalanced(
                 alg.factorByField(
                     sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, field=2
                 ),
@@ -420,7 +420,7 @@ class TestALgorithms(unittest.TestCase):
         )
 
         self.assertEqual(
-            alg.sampleContext(
+            alg.sampleBalanced(
                 alg.factorByField(
                     sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, field=2
                 ),
@@ -546,12 +546,12 @@ class TestALgorithms(unittest.TestCase):
             "(U|x,(I|x,((A|y,C|y),(E|z,F|z))));",
         )
 
-    def test_sampleProportional(self):
+    def test_sampleMonophyletic(self):
         six = "(((A,B),C),(D,(E,F)));"
         # sampling is across root children
         self.assertEqual(
             newick(
-                alg.sampleProportional(
+                alg.sampleMonophyletic(
                     sp.p_tree.parse(six).tree, proportion=0.1, minTips=2, seed=43
                 )
             ),
@@ -561,7 +561,7 @@ class TestALgorithms(unittest.TestCase):
         seven = "(O|x,(((A|y,B|y),C|y),(D|z,(E|z,F|z))));"
         self.assertEqual(
             newick(
-                alg.sampleProportional(
+                alg.sampleMonophyletic(
                     alg.factorByField(sp.p_tree.parse(seven).tree, field=2),
                     proportion=0.1,
                     minTips=2,
@@ -574,35 +574,35 @@ class TestALgorithms(unittest.TestCase):
         # sometimes a basal strain is selected
         self.assertEqual(
             newick(
-                alg.sampleProportional(sp.p_tree.parse(seven).tree, number=1, seed=46)
+                alg.sampleMonophyletic(sp.p_tree.parse(seven).tree, number=1, seed=46)
             ),
             "(O|x);",
         )
         # sometimes it isn't (random)
         self.assertEqual(
             newick(
-                alg.sampleProportional(sp.p_tree.parse(seven).tree, number=1, seed=44)
+                alg.sampleMonophyletic(sp.p_tree.parse(seven).tree, number=1, seed=44)
             ),
             "(C|y);",
         )
         # sometimes both root branches will be sampled
         self.assertEqual(
             newick(
-                alg.sampleProportional(sp.p_tree.parse(seven).tree, number=3, seed=46)
+                alg.sampleMonophyletic(sp.p_tree.parse(seven).tree, number=3, seed=46)
             ),
             "(O|x,(C|y,F|z));",
         )
         # sometimes they won't
         self.assertEqual(
             newick(
-                alg.sampleProportional(sp.p_tree.parse(seven).tree, number=3, seed=40)
+                alg.sampleMonophyletic(sp.p_tree.parse(seven).tree, number=3, seed=40)
             ),
             "(C|y,(D|z,E|z));",
         )
         # --- selection by number works for factored trees
         self.assertEqual(
             newick(
-                alg.sampleProportional(
+                alg.sampleMonophyletic(
                     alg.factorByField(sp.p_tree.parse(seven).tree, field=2),
                     number=1,
                     seed=43,
@@ -612,7 +612,7 @@ class TestALgorithms(unittest.TestCase):
         )
         self.assertEqual(
             newick(
-                alg.sampleProportional(
+                alg.sampleMonophyletic(
                     alg.factorByField(sp.p_tree.parse(seven).tree, field=2),
                     number=2,
                     seed=43,
@@ -623,7 +623,7 @@ class TestALgorithms(unittest.TestCase):
         # --- high numbers cleanly select everything
         self.assertEqual(
             newick(
-                alg.sampleProportional(
+                alg.sampleMonophyletic(
                     alg.factorByField(sp.p_tree.parse(seven).tree, field=2), number=100
                 )
             ),
@@ -631,7 +631,7 @@ class TestALgorithms(unittest.TestCase):
         )
         self.assertEqual(
             newick(
-                alg.sampleProportional(
+                alg.sampleMonophyletic(
                     alg.factorByField(sp.p_tree.parse(seven).tree, field=2), number=100
                 )
             ),
