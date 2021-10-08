@@ -1,8 +1,9 @@
-0.15.0 [2021-xx-xx]
+0.15.0 [2021-08-08]
 ===================
 
  * Add `stat` subcommand 
  * Replace `sample prop` with `sample mono`. This contrasts with `para`.
+ * Add -v/--version option
 
 0.14.2 [2021-09-14]
 ===================

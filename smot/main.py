@@ -916,10 +916,10 @@ def rm_color(newick, tree):
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
-
 @click.group(help="Simple Manipulation Of Trees", context_settings=CONTEXT_SETTINGS)
-def cli():
-    pass
+@click.version_option(__version__, "-v", "--version", message=__version__)
+def cli(version):
+      pass
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
