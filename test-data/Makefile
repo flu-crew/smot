@@ -92,5 +92,10 @@ all:
 	# check factor-by-table
 	smot factor table --factor-by-table=fishbone-table.txt unfactored-fishbone.tre --impute > a
 	diff a fishbone-table-factored.txt
+	# check color push and pull
+	smot color pull 1B-partial-color.tre > z.tre
+	diff z.tre 1B-full-color.tre
+	smot color push 1B-spotty-color.tre > z.tre
+	diff z.tre 1B-full-color.tre
 	# cleanup
 	rm -f a b a.tre b.tre

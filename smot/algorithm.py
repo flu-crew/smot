@@ -46,7 +46,7 @@ def treepull(node, fun, **kwargs):
     fun :: NodeData -> [NodeData] -> NodeData
     """
     if node.data.isLeaf:
-        node.data = fun(node.data, [])
+        node.data = fun(node.data, [], **kwargs)
     else:
         node.kids = [
             treepull(kid, fun, **kwargs) for kid in node.kids if kid is not None

@@ -1,3 +1,9 @@
+0.16.0 [2021-10-xx]
+===================
+
+ * Setup smot module interface
+ * Add `color push` and `color pull` commands
+
 0.15.0 [2021-08-08]
 ===================
 
