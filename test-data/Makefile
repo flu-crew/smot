@@ -106,5 +106,8 @@ all:
 	smot sample para -p 0.1 --factor-by-capture="([HS])" polytomyHS-v2.tre | smot tips | grep S | sort > a
 	smot tips polytomyHS-v2.tre | grep S | sort > b
 	diff a b
+	# zero min-tips test
+	smot sample mono --min-tips=0 -p 0.1 --factor-by-capture "(swine|human)" --seed=42 pdm.tre > a
+	diff a .pdm_zero-min-tips.tre
 	# cleanup
 	rm -f a b a.tre b.tre
