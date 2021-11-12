@@ -202,8 +202,8 @@ dec_newick = click.option(
 dec_scale = click.option(
     "-s",
     "--scale",
-    type=click.FloatRange(min=0, max=1),
-    help="Scale the size of the clade to this power (if there are n tips in a group, it will scale down to n^r)",
+    type=click.FloatRange(min=1),
+    help="Scale the size of the clade to this power (if there are n tips in a group, it will scale down to n^(1/r))",
 )
 
 dec_max_tips = click.option(

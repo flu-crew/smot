@@ -436,7 +436,7 @@ def sampleParaphyletic(
     elif scale:
 
         def _sample(labels):
-            return min(len(labels), max(minTips, math.ceil(len(labels) ** scale)))
+            return min(len(labels), max(minTips, math.ceil(len(labels) ** (1 / scale))))
 
     else:
 
@@ -551,7 +551,7 @@ def sampleMonophyletic(
     if proportion:
         count_fun = lambda xs: max(minTips, math.floor(len(xs) * proportion))
     elif scale:
-        count_fun = lambda xs: max(minTips, math.floor(len(xs) ** scale))
+        count_fun = lambda xs: max(minTips, math.floor(len(xs) ** (1 / scale)))
     else:
         count_fun = lambda xs: min(len(xs), number)
 
