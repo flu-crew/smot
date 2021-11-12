@@ -97,5 +97,14 @@ all:
 	diff z.tre 1B-full-color.tre
 	smot color push 1B-spotty-color.tre > z.tre
 	diff z.tre 1B-full-color.tre
+	# polytomies are correctly handled by sample para
+	# * three random tests for presence of root
+	smot sample para -p 0.1 --factor-by-capture="([HS])" polytomyHS-v2.tre | smot tips | grep -E '(X1|X2|X3)\|' 
+	smot sample para -p 0.1 --factor-by-capture="([HS])" polytomyHS-v2.tre | smot tips | grep -E '(X1|X2|X3)\|' 
+	smot sample para -p 0.1 --factor-by-capture="([HS])" polytomyHS-v2.tre | smot tips | grep -E '(X1|X2|X3)\|' 
+	# all swine are present
+	smot sample para -p 0.1 --factor-by-capture="([HS])" polytomyHS-v2.tre | smot tips | grep S | sort > a
+	smot tips polytomyHS-v2.tre | grep S | sort > b
+	diff a b
 	# cleanup
 	rm -f a b a.tre b.tre
