@@ -27,9 +27,9 @@ from smot.algorithm import (
     filterMono,
 )
 
-from smot.parser import (read_file, read_text)
+from smot.parser import read_file, read_text
 
-from smot.format import (newick, nexus)
+from smot.format import newick, nexus
 
 from smot.classes import (
     Tree,

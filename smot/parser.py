@@ -5,18 +5,22 @@ from smot.classes import Node, Tree
 
 p_whitespace = p.regex(r"\s*", re.MULTILINE)
 
+
 def read_fh(treefh):
     rawtree = treefh.readlines()
     rawtree = "".join(rawtree)
     tree = p_tree.parse(rawtree)
     return tree
 
+
 def read_file(treefile):
     with open(treefile, "r") as treefh:
         return read_fh(treefh)
 
+
 def read_text(treestr):
-   return p_tree.parse(treestr) 
+    return p_tree.parse(treestr)
+
 
 def p_parens(parser):
     return p.string("(") >> parser << p.string(")")

@@ -1,3 +1,23 @@
+0.17.0 [2021-11-xx]
+===================
+
+ * Change the `--scale=r` parameter in `sample para` and `sample mono` to
+   represent `n^(1/r)` instead of `n^r`. With this parameterization, `r` ranges
+   from 1 to infinity and thus does not conflict with the `--proportion` term
+   (which ranges from 0 to 1). They do overlap at `--scale=1` and
+   `--proportion=1`, but these are equivalent, both sampling everything.
+
+ [ ] Add option for maximizing clade boundaries by patristic distance. Follow a
+ simple paraphyletic interpretation but allow an option to sample the pair
+ between adjacent groups that has the minimum patristic distance and an option
+ for including the deepest root of a branch.
+
+ [ ] Handle branch confidence. The confidence two groups are separated in the
+ down-sampled tree should be equivalent to the confidence they are separated in
+ the original tree. That is, we should guarantee confidence of selection is
+ preserved.
+
+
 0.16.0 [2021-10-21]
 ===================
 

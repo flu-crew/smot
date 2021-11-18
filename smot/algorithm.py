@@ -79,6 +79,15 @@ def tips(node):
     return treefold(node, _fun, [])
 
 
+def tipSet(node):
+    def _collect(b, d):
+        if d.isLeaf:
+            b.add(d.label)
+        return b
+
+    return treefold(node, _collect, set())
+
+
 def partition(xs, f):
     a = []
     b = []
@@ -145,7 +154,10 @@ def factorByField(node, field, default=None, sep="|"):
 
     def _fun(name):
         try:
-            return name.split(sep)[field - 1]
+            try:
+                return name.split(sep)[field - 1]
+            except:
+                return default
         except:
             return default
 
@@ -177,7 +189,7 @@ def factorByTable(node, filename, default=None):
                 (k, v) = line.strip().split("\t")
                 factorMap[k] = v
             except ValueError:
-                die("Expected two columns in --factor-by-table file")
+                raise "Expected two columns in --factor-by-table file"
 
         def _fun(name):
             if name:
@@ -198,6 +210,12 @@ def isMonophyletic(node):
 
 
 def getFactor(node):
+    """
+    Return the first factor that a tree has (in no special order) or if there
+    is no factor, than return None. This function should only be used for
+    monophyletic cases where monophylicity has already been confirmed (see
+    isMonophyletic).
+    """
     if node.data.factorCount:
         return list(node.data.factorCount.keys())[0]
     else:
@@ -416,114 +434,17 @@ def sampleBalanced(node, keep=[], maxTips=5):
     return clean(_sampleBalanced(node))
 
 
-def sampleParaphyletic(
-    node,
-    proportion=None,
-    scale=None,
-    number=None,
-    keep=[],
-    keep_regex="",
-    minTips=1,
-    seed=None,
-):
-    rng = random.Random(seed)
+def sampleParaphyletic(node, **kwargs):
 
-    if proportion:
+    # Choose a strategy for sampling
+    _sampler = _makeParaphyleticSampler(**kwargs)
 
-        def _sample(labels):
-            return min(len(labels), max(minTips, math.ceil(proportion * len(labels))))
-
-    elif scale:
-
-        def _sample(labels):
-            return min(len(labels), max(minTips, math.ceil(len(labels) ** (1 / scale))))
-
-    else:
-
-        def _sample(labels):
-            return min(len(labels), number)
-
-    def getLabels(node):
-        def _collect(b, d):
-            if d.isLeaf:
-                b.add(d.label)
-            return b
-
-        return treefold(node, _collect, set())
-
-    def sampleLabels(labels, factor):
-        if factor in keep:
-            return labels
-        else:
-            if keep_regex:
-                (keepers, samplers) = partition(
-                    labels, lambda x: bool(re.search(keep_regex, x))
-                )
-            else:
-                (keepers, samplers) = ([], labels)
-            N = _sample(samplers)
-            try:
-                sample = rng.sample(sorted(list(samplers)), N)
-            except ValueError:
-                die(f"Bad sample size ({N}) for population of size ({len(labels)})")
-            return sample + keepers
-
-    def _select(node, selected, paraGroup, paraFactor):
-        rebelChild = None
-        potentialMembers = []
-        canMerge = True
-        oldFactor = paraFactor
-        for kid in node.kids:
-            factor = getFactor(kid)
-            if not canMerge:
-                potentialMembers.append(kid)
-            else:
-                if isMonophyletic(kid):
-                    if factor == paraFactor or factor is None:
-                        potentialMembers.append(kid)
-                    elif (
-                        factor != paraFactor
-                        and factor != oldFactor
-                        and paraFactor != oldFactor
-                    ):
-                        canMerge = False
-                        potentialMembers.append(kid)
-                    else:
-                        selected.update(sampleLabels(paraGroup, paraFactor))
-                        paraGroup = getLabels(kid)
-                        paraFactor = factor
-                else:
-                    if rebelChild is None:
-                        rebelChild = kid
-                    else:
-                        canMerge = False
-                        selected.update(sampleLabels(paraGroup, paraFactor))
-                        paraFactor = None
-                        paraGroup = set()
-                        selected.update(_select(rebelChild, selected, set(), None))
-                        selected.update(_select(kid, selected, set(), None))
-        if canMerge and rebelChild is not None:
-            for k in potentialMembers:
-                paraGroup.update(getLabels(k))
-            selected.update(_select(rebelChild, selected, paraGroup, paraFactor))
-        else:
-            groups = defaultdict(set)
-            for k in potentialMembers:
-                factor = getFactor(k)
-                if isMonophyletic(k):
-                    if factor == paraFactor or factor is None:
-                        paraGroup.update(getLabels(k))
-                    else:
-                        groups[factor].update(getLabels(k))
-                else:
-                    selected.update(_select(k, selected, set(), None))
-            selected.update(sampleLabels(paraGroup, paraFactor))
-            for (k, v) in groups.items():
-                selected.update(sampleLabels(v, factor=k))
-        return selected
-
+    # Pull factor sets up into each node, this is a performance optimization.
+    # Without it I would have to traverse the entire subtree beneath each node.
     node = setFactorCounts(node)
-    selected = _select(node, set(), set(), None)
+
+    # Find a set of strains to keep in the final tree
+    selected = _selectParaphyletic(node=node, sampler=_sampler, selected=set(), paraGroup=set(), paraFactor=None)
 
     def _cull(node):
         chosenOnes = [
@@ -533,7 +454,156 @@ def sampleParaphyletic(
         ]
         return chosenOnes
 
-    return clean(treecut(node, _cull))
+    # Remove all tips but those selected above
+    subsampled_tree = clean(treecut(node, _cull))
+
+    return subsampled_tree
+
+
+# Prepare the sampling function for the paraphyletic sampling algorithms
+#
+# sampleParaphyletic finds sampling groups as it traverses the tree, the groups
+# are downsampled using the function produced here. Most of the algorithmic
+# complexity is in sampleParaphyletic, but most of the parameterization happens
+# here in the sampler.
+def _makeParaphyleticSampler(
+    keep=[],
+    keep_regex="",
+    proportion=None,
+    scale=None,
+    number=None,
+    minTips=1,
+    seed=None,
+    keep_ends=False,
+):
+
+    rng = random.Random(seed)
+
+    import sys
+
+    # Choose a sampling algorithm
+    # proportional selects samples from the sampling group with 0-1 probability
+    if proportion is not None:
+
+        def _sample(labels):
+            return min(len(labels), max(minTips, math.ceil(proportion * len(labels))))
+
+    # scale randomly selects s=n^(1/scale) elements from the sampling group
+    elif scale is not None:
+
+        def _sample(labels):
+            return min(len(labels), max(minTips, math.ceil(len(labels) ** (1 / scale))))
+
+    # otherwise choose a particular number of strains
+    elif number is not None:
+
+        def _sample(labels):
+            return min(len(labels), number)
+
+    # if no choose is selected, then we're f*cked
+    else:
+
+        raise "No sampling strategy given"
+
+    #  Internal sampling function used by sampleParaphyletic
+    def _sampleLabels(labels, factor, ends):
+        if factor in keep:
+            return labels
+        else:
+            keepers = []
+            samplers = set(labels)
+            if keep_regex:
+                (keepers, samplers) = partition(
+                    samplers, lambda x: bool(re.search(keep_regex, x))
+                )
+
+            if keep_ends:
+                keepers = keepers + ends
+                samplers = {s for s in samplers if s not in ends}
+
+            N = _sample(samplers)
+            try:
+                sample = rng.sample(sorted(list(samplers)), N)
+            except ValueError:
+                raise f"Bad sample size ({N}) for population of size ({len(labels)})"
+            return sample + keepers
+
+    return _sampleLabels
+
+
+# recursive function for creating sampling groups
+def _selectParaphyletic(
+    node, sampler, selected=set(), paraGroup=set(), paraFactor=None
+):
+    # a subtree that is not of the same factor as the parent
+    rebelChild = None
+    potentialMembers = []
+    canMerge = True
+    ends = [None, None]
+    oldFactor = paraFactor
+    for kid in node.kids:
+        if not canMerge:
+            potentialMembers.append(kid)
+        else:
+            # if a child is monophyletic (all tips have the same factor or no factor)
+            if isMonophyletic(kid):
+                factor = getFactor(kid)
+                # if the kid has no factor or the same factor as the parent
+                # node, then add it to the member list
+                if factor is None or factor == paraFactor:
+                    potentialMembers.append(kid)
+                # if XXX then stop collecting nodes and add this last child
+                elif (
+                    factor != paraFactor
+                    and factor != oldFactor
+                    and paraFactor != oldFactor
+                ):
+                    canMerge = False
+                    potentialMembers.append(kid)
+                # otherwise, record the collected selections are and start a new group
+                else:
+                    selected.update(sampler(paraGroup, paraFactor, ends))
+                    paraGroup = tipSet(kid)
+                    paraFactor = factor
+            # else the child has two or more distinct factors
+            else:
+                if rebelChild is None:
+                    rebelChild = kid
+                else:
+                    canMerge = False
+                    selected.update(sampler(paraGroup, paraFactor, ends))
+                    paraFactor = None
+                    paraGroup = set()
+                    selected.update(
+                        _selectParaphyletic(rebelChild, sampler, selected=selected)
+                    )
+                    selected.update(
+                        _selectParaphyletic(kid, sampler, selected=selected)
+                    )
+    # end loop ------------
+
+    if canMerge and rebelChild is not None:
+        for k in potentialMembers:
+            paraGroup.update(tipSet(k))
+        selected.update(
+            _selectParaphyletic(rebelChild, sampler, selected, paraGroup, paraFactor)
+        )
+    else:
+        groups = defaultdict(set)
+        for k in potentialMembers:
+            if isMonophyletic(k):
+                factor = getFactor(k)
+                if factor == paraFactor or factor is None:
+                    paraGroup.update(tipSet(k))
+                else:
+                    groups[factor].update(tipSet(k))
+            else:
+                selected.update(_selectParaphyletic(k, sampler, selected))
+        selected.update(sampler(paraGroup, paraFactor, ends))
+        for (k, v) in groups.items():
+            selected.update(sampler(v, k, ends))
+
+    return selected
 
 
 def sampleMonophyletic(

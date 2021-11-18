@@ -510,6 +510,7 @@ class TestALgorithms(unittest.TestCase):
             ),
             "(X1|H,(X4|H,((Y2|H,Y3|H),X6|S)));",
         )
+
         self.assertEqual(
             newick(
                 alg.sampleParaphyletic(sp.p_tree.parse(fork).tree, number=2, seed=46)

@@ -909,13 +909,15 @@ def rm_color(newick, tree):
     else:
         print(sf.nexus(tree))
 
+
 # Remove all black color
 def unblack(x, colmap):
-  if "!color" in x.form and x.form["!color"] == "#000000":
-    del x.form["!color"]
-  if x.isLeaf and x.label in colmap and colmap[x.label] == "#000000":
-    del colmap[x.label]
-  return x
+    if "!color" in x.form and x.form["!color"] == "#000000":
+        del x.form["!color"]
+    if x.isLeaf and x.label in colmap and colmap[x.label] == "#000000":
+        del colmap[x.label]
+    return x
+
 
 # color nodes by tip
 def tip2node(x, kids, colmap):
@@ -924,19 +926,22 @@ def tip2node(x, kids, colmap):
         for kid in kids
         if "!color" in kid.form and kid.form["!color"]
     ]
-    child_leaf_colors = [colmap[kid.label] for kid in kids if kid.isLeaf and kid.label in colmap]
+    child_leaf_colors = [
+        colmap[kid.label] for kid in kids if kid.isLeaf and kid.label in colmap
+    ]
     child_colors = set(child_node_colors + child_leaf_colors)
     if len(child_colors) == 1:
         x.form["!color"] = list(child_colors)[0]
     return x
 
+
 # color tips by node
 def node2tip(x, kid, colmap):
     if "!color" in x.form:
-      if not "!color" in kid.form:
-          kid.form["!color"] = x.form["!color"]
-      if kid.isLeaf:
-          colmap[kid.label] = x.form["!color"]
+        if not "!color" in kid.form:
+            kid.form["!color"] = x.form["!color"]
+        if kid.isLeaf:
+            colmap[kid.label] = x.form["!color"]
     return kid
 
 
@@ -956,6 +961,7 @@ def pull_color(tree):
     tree.tree = alg.treepush(tree.tree, node2tip, colmap=colmap)
 
     print(sf.nexus(tree))
+
 
 @click.command(name="push")
 @dec_tree
