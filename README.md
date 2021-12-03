@@ -55,7 +55,7 @@ smot sample prop --proportion=0.1 --min-tips=2 --factor-by-capture="(human|swine
 smot sample para --proportion=0.1 --min-tips=2 --factor-by-capture="(human|swine)" --keep="swine" --seed=42 pdm.tre > pdm-para.tre
 ```
 
-##Case study: Inferring human-to-swine influenza A virus transmission events
+## Case study: Inferring human-to-swine influenza A virus transmission events
 ``` sh
 # image B
 smot sample equal --factor-by-capture="(human|swine)" --keep="swine" --seed=42 --max-tips=2 pdm.tre > pdm-equal.tre
