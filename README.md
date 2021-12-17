@@ -97,10 +97,10 @@ smot grep -v "(swine|human)" pdm.tre |
 smot sample equal select-swine.tre --factor-by-capture="(swine|human)" \
   --max-tips=1 --keep="swine" > select-swine-equal-sample.tre
 
-smot sample mono select-swine.tre --scale=0.25 --factor-by-capture="(swine|human)" \
+smot sample mono select-swine.tre --scale=4 --factor-by-capture="(swine|human)" \
   --min-tips=1 --keep="swine" --seed=42 > select-swine-mono-sample.tre
 
-smot sample para select-swine.tre --scale=0.25 --factor-by-capture="(swine|human)" \
+smot sample para select-swine.tre --scale=4 --factor-by-capture="(swine|human)" \
   --min-tips=3 --keep="swine" --seed=42 > select-swine-para-sample.tre
 ```
 
