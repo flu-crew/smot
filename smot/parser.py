@@ -1,4 +1,4 @@
-import parsec as p
+import parsec as p  # type: ignore
 import re
 from smot.util import die
 from smot.classes import Node, Tree

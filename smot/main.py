@@ -3,6 +3,7 @@ import click
 import os
 import signal
 import sys
+from smot.classes import Node, NodeData
 from smot.util import die
 import smot.format as sf
 
@@ -104,7 +105,13 @@ def factorTree(
     elif factor_by_capture is not None:
         node = alg.factorByCapture(node, pat=factor_by_capture, default=default)
     elif factor_by_table is not None:
-        node = alg.factorByTable(node, filename=factor_by_table, default=default)
+        with open(factor_by_table, "r") as fh:
+            try:
+                table = {k : v for (k,v) in [(a,b) = row.strip().split("\t") for row in fh.readlines()]}
+            except ValueError:
+                raise "Expected two columns in --factor-by-table file"
+
+            node = alg.factorByTable(node, table=table, default=default)
 
     if patristic:
         node = alg.imputePatristicFactors(node)
@@ -453,7 +460,7 @@ def factor(
     patristic,
     newick,
     tree,
-):
+) -> None:
     """
     Impute, annotate with, and/or tabulate factors. The --impute option will
     fill in missing factors in monophyletic branches. This is useful, for
@@ -480,7 +487,7 @@ def factor(
     # (possibly imputed) factor
     if method.lower() == "table":
 
-        def _fun(b, x):
+        def _fun_treefold(b, x):
             if x.isLeaf:
                 if x.factor is None:
                     factor = default
@@ -489,13 +496,13 @@ def factor(
                 b.append(f"{x.label}\t{factor}")
             return b
 
-        for row in alg.treefold(tree.tree, _fun, []):
+        for row in alg.treefold(tree.tree, _fun_treefold, []):
             print(row)
 
     # prepend or append the factor to the tip labels and print the resulting tree
     else:
 
-        def _fun(x):
+        def _fun_treemap(x: NodeData) -> NodeData:
             if x.isLeaf:
                 if x.factor is None:
                     x.factor = default
@@ -505,7 +512,7 @@ def factor(
                     x.label = f"{x.label}|{x.factor}"
             return x
 
-        tree.tree = alg.treemap(tree.tree, _fun)
+        tree.tree = alg.treemap(tree.tree, _fun_treemap)
 
         if newick:
             print(sf.newick(tree))
@@ -911,38 +918,47 @@ def rm_color(newick, tree):
 
 
 # Remove all black color
-def unblack(x, colmap):
-    if "!color" in x.form and x.form["!color"] == "#000000":
-        del x.form["!color"]
-    if x.isLeaf and x.label in colmap and colmap[x.label] == "#000000":
-        del colmap[x.label]
-    return x
+def make_unblack(colmap):
+    def unblack(x):
+        if "!color" in x.form and x.form["!color"] == "#000000":
+            del x.form["!color"]
+        if x.isLeaf and x.label in colmap and colmap[x.label] == "#000000":
+            del colmap[x.label]
+        return x
+
+    return unblack
 
 
 # color nodes by tip
-def tip2node(x, kids, colmap):
-    child_node_colors = [
-        kid.form["!color"]
-        for kid in kids
-        if "!color" in kid.form and kid.form["!color"]
-    ]
-    child_leaf_colors = [
-        colmap[kid.label] for kid in kids if kid.isLeaf and kid.label in colmap
-    ]
-    child_colors = set(child_node_colors + child_leaf_colors)
-    if len(child_colors) == 1:
-        x.form["!color"] = list(child_colors)[0]
-    return x
+def make_tip2node(colmap):
+    def tip2node(x, kids):
+        child_node_colors = [
+            kid.form["!color"]
+            for kid in kids
+            if "!color" in kid.form and kid.form["!color"]
+        ]
+        child_leaf_colors = [
+            colmap[kid.label] for kid in kids if kid.isLeaf and kid.label in colmap
+        ]
+        child_colors = set(child_node_colors + child_leaf_colors)
+        if len(child_colors) == 1:
+            x.form["!color"] = list(child_colors)[0]
+        return x
+
+    return tip2node
 
 
 # color tips by node
-def node2tip(x, kid, colmap):
-    if "!color" in x.form:
-        if not "!color" in kid.form:
-            kid.form["!color"] = x.form["!color"]
-        if kid.isLeaf:
-            colmap[kid.label] = x.form["!color"]
-    return kid
+def make_node2tip(colmap):
+    def node2tip(x, kid):
+        if "!color" in x.form:
+            if not "!color" in kid.form:
+                kid.form["!color"] = x.form["!color"]
+            if kid.isLeaf:
+                colmap[kid.label] = x.form["!color"]
+        return kid
+
+    return node2tip
 
 
 @click.command(name="pull")
@@ -956,9 +972,9 @@ def pull_color(tree):
 
     colmap = tree.colmap
 
-    tree.tree = alg.treemap(tree.tree, unblack, colmap=colmap)
-    tree.tree = alg.treepull(tree.tree, tip2node, colmap=colmap)
-    tree.tree = alg.treepush(tree.tree, node2tip, colmap=colmap)
+    tree.tree = alg.treemap(tree.tree, make_unblack(colmap))
+    tree.tree = alg.treepull(tree.tree, make_tip2node(colmap))
+    tree.tree = alg.treepush(tree.tree, make_node2tip(colmap))
 
     print(sf.nexus(tree))
 
@@ -974,8 +990,8 @@ def push_color(tree):
 
     colmap = tree.colmap
 
-    tree.tree = alg.treemap(tree.tree, unblack, colmap=colmap)
-    tree.tree = alg.treepush(tree.tree, node2tip, colmap=colmap)
+    tree.tree = alg.treemap(tree.tree, make_unblack(colmap))
+    tree.tree = alg.treepush(tree.tree, make_node2tip(colmap))
 
     print(sf.nexus(tree))
 

@@ -655,6 +655,8 @@ class TestALgorithms(unittest.TestCase):
         self.assertEqual(
             newick(alg.sampleN(sp.p_tree.parse("(B,(A,C,E),D);").tree, 2)), "(B,A);"
         )
+        with self.assertRaises(ValueError):
+            newick(alg.sampleN(sp.p_tree.parse("(B,(A,C,E),D);").tree, 0))
 
 
 if __name__ == "__main__":
