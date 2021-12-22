@@ -1,7 +1,7 @@
 import parsec as p  # type: ignore
 import re
 from smot.util import die
-from smot.classes import Node, Tree
+from smot.classes import make_Node, make_Tree
 
 p_whitespace = p.regex(r"\s*", re.MULTILINE)
 
@@ -72,7 +72,7 @@ p_term = (p_label + p.optional(p_format) + p.optional(p_length)).parsecmap(
     lambda x: (x[0][0], x[0][1], x[1])
 )
 
-p_leaf = p_term.parsecmap(lambda x: Node(kids=[], label=x[0], form=x[1], length=x[2]))
+p_leaf = p_term.parsecmap(lambda x: make_Node(kids=[], label=x[0], form=x[1], length=x[2]))
 p_info = (p.optional(p_label) + p.optional(p_format) + p.optional(p_length)).parsecmap(
     lambda x: (x[0][0], x[0][1], x[1])
 )
@@ -81,7 +81,7 @@ p_info = (p.optional(p_label) + p.optional(p_format) + p.optional(p_length)).par
 @p.generate
 def p_node():
     r = yield (p_tuple(p_leaf ^ p_node) + p.optional(p_info)).parsecmap(
-        lambda x: Node(kids=x[0], label=x[1][0], form=x[1][1], length=x[1][2])
+        lambda x: make_Node(kids=x[0], label=x[1][0], form=x[1][1], length=x[1][2])
     )
     return r
 
@@ -100,7 +100,7 @@ def p_nexus():
             colmap = v
         else:
             meta[k] = v
-    return Tree(tree=tree, colmap=colmap, meta=meta)
+    return make_Tree(tree=tree, colmap=colmap, meta=meta)
 
 
 @p.generate
@@ -162,4 +162,4 @@ def dieIfMultiple(xs):
         die(f"Expected a single entry in this NEXUS file, found {len(xs)}")
 
 
-p_tree = p_nexus ^ p_newick.parsecmap(Tree)
+p_tree = p_nexus ^ p_newick.parsecmap(make_Tree)

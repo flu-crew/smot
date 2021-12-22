@@ -98,16 +98,16 @@ def factorTree(
         try:
             field = int(factor_by_field)
         except ValueError:
-            die(
-                f"""Expected a positive integer for field --factor-by-field, got '{factor_by_field}'"""
-            )
-        node = alg.factorByField(node, field, default=default)
+            die(f"Expected a positive integer for field --factor-by-field, got '{factor_by_field}'")
+        if default:
+            die(f"I'm sorry, I can't let you do that. Using --default with --factor-by-field is unsafe.")
+        node = alg.factorByField(node, field)
     elif factor_by_capture is not None:
         node = alg.factorByCapture(node, pat=factor_by_capture, default=default)
     elif factor_by_table is not None:
         with open(factor_by_table, "r") as fh:
             try:
-                table = {k : v for (k,v) in [(a,b) = row.strip().split("\t") for row in fh.readlines()]}
+                table = {k : v for (k,v) in [row.strip().split("\t") for row in fh.readlines()]}
             except ValueError:
                 raise "Expected two columns in --factor-by-table file"
 

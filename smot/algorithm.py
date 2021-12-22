@@ -1,28 +1,45 @@
-from smot.classes import Node, NodeData
+from smot.classes import Node, NodeData, F, LC, FC, BL
 from smot.util import die
 from collections import Counter, defaultdict
 import re
 import math
 import random
-from typing import Any, Callable, List, Set, Tuple, Union, Dict, Optional, Pattern, Iterable, TypeVar, cast
+from typing import (
+    Any,
+    Callable,
+    List,
+    Set,
+    Tuple,
+    Union,
+    Dict,
+    Optional,
+    Pattern,
+    Iterable,
+    TypeVar,
+    cast,
+)
+
+AnyNode = Node[F, LC, FC, BL]
+AnyNodeData = NodeData[F, LC, FC, BL]
 
 # A type variable that can happily be anything
-A = TypeVar('A')
+A = TypeVar("A")
 
-def treemap(node: Node, fun: Callable[[NodeData], NodeData]) -> Node:
+def treemap(node: AnyNode, fun: Callable[[AnyNodeData], AnyNodeData]) -> AnyNode:
     """
     Map a function over the data (label, format, and branch length) of each node in
     the tree. The function is guaranteed to never alter the topology of the tree.
 
-    fun :: NodeData -> NodeData
+    fun :: AnyNodeData -> AnyNodeData
     """
     node.data = fun(node.data)
     node.kids = [treemap(k, fun) for k in node.kids if k is not None]
     return node
 
-def treefold(node: Node, fun: Callable[[A, NodeData], A], init: A) -> A:
+
+def treefold(node: AnyNode, fun: Callable[[A, AnyNodeData], A], init: A) -> A:
     """
-    fun :: a -> NodeData -> a
+    fun :: a -> AnyNodeData -> a
     """
     x = fun(init, node.data)
     for kid in [k for k in node.kids if k is not None]:
@@ -30,21 +47,21 @@ def treefold(node: Node, fun: Callable[[A, NodeData], A], init: A) -> A:
     return x
 
 
-def treecut(node : Node, fun : Callable[[Node], List[Node]]) -> Node:
+def treecut(node: AnyNode, fun: Callable[[AnyNode], List[AnyNode]]) -> AnyNode:
     """
     Prune a tree using information from the parent
 
     Arguments
     ---------
     node :
-      The parent node 
-    fun : Node -> [Node]
+      The parent node
+    fun : AnyNode -> [AnyNode]
       A function that returns which children should be kept. Technically, it
       could also create new children.
 
     Return
     ------
-    Node
+    AnyNode
       A trimmed tree
     """
     node.kids = fun(node)
@@ -52,13 +69,13 @@ def treecut(node : Node, fun : Callable[[Node], List[Node]]) -> Node:
     return node
 
 
-def treepull(node : Node, fun : Callable[[NodeData, List[NodeData]], NodeData]) -> Node:
+def treepull(node: AnyNode, fun: Callable[[AnyNodeData, List[AnyNodeData]], AnyNodeData]) -> AnyNode:
     """
     Change parent based on children
 
     Can alter leafs, since they are treated as nodes without children.
 
-    fun :: NodeData -> [NodeData] -> NodeData
+    fun :: AnyNodeData -> [AnyNodeData] -> AnyNodeData
     """
     if node.data.isLeaf:
         node.data = fun(node.data, [])
@@ -68,11 +85,11 @@ def treepull(node : Node, fun : Callable[[NodeData, List[NodeData]], NodeData]) 
     return node
 
 
-def treepush(node : Node, fun : Callable[[NodeData, NodeData], NodeData]) -> Node:
+def treepush(node: AnyNode, fun: Callable[[AnyNodeData, AnyNodeData], AnyNodeData]) -> AnyNode:
     """
     Change children based on parent
 
-    fun :: NodeData -> NodeData -> NodeData
+    fun :: AnyNodeData -> AnyNodeData -> AnyNodeData
     """
 
     if not node.data.isLeaf:
@@ -83,7 +100,71 @@ def treepush(node : Node, fun : Callable[[NodeData, NodeData], NodeData]) -> Nod
     return node
 
 
-def tips(node : Node) -> List[str]:
+def requireBranchLengths(node : Node[F, LC, FC, BL]) -> Node[F, LC, FC, float]:
+    """
+    Assert that a node contains branch annotations throughout.
+
+    An error is raised unless all branches are positive and defined.
+    """
+    kids = [requireBranchLengths(kid) for kid in node.kids]
+    if node.data.length is None:
+        raise ValueError("Expected all branch lengths to be defined")
+    elif node.data.length < 0:
+        raise ValueError("Expected all branch lengths to be positive")
+    else:
+        kids_ = cast(List[Node[F, LC, FC, float]], kids)
+        node_ = cast(Node[F, LC, FC, float], node)
+        node_.data = cast(NodeData[F, LC, FC, float], node.data)
+        node_.kids = kids_
+        return node_
+
+
+def setNLeafs(node: Node[F, LC, FC, BL]) -> Node[F, int, FC, BL]:
+    """
+    Count the number of leafs descending from each branch.
+
+    This is done solely to improve performance in some of the algorithms.
+    """
+    if node.data.isLeaf:
+        n = 1
+    else:
+        kids_ = [setNLeafs(kid) for kid in node.kids if kid is not None]
+        n = sum(kid.data.nleafs for kid in kids_)
+
+    node_ = cast(Node[F, int, FC, BL], node)
+    node_.data = cast(NodeData[F, int, FC, BL], node.data)
+    node.data.nleafs = n # type: ignore
+    node_.kids = kids_
+    return node_
+
+
+def setFactorCounts(node: Node[F, LC, FC, BL]) -> Node[F, LC, Counter, BL]:
+    """
+    Count the factors descending from each node.
+
+    This is done solely to improve performance in some of the algorithms.
+    """
+    n : Counter
+    if node.data.isLeaf:
+        if node.data.factor:
+            n = Counter([node.data.factor])
+        else:
+            n = Counter()
+    else:
+        n = Counter()
+        kids_ = [setFactorCounts(kid) for kid in node.kids]
+        for kid in kids_:
+            n += kid.data.factorCount
+
+    node_ = cast(Node[F, LC, Counter, BL], node)
+    node_.kids = kids_ 
+    node_.data = cast(NodeData[F, LC, Counter, BL], node.data) 
+    node_.data.factorCount = n # type: ignore
+
+    return node_
+
+
+def tips(node: AnyNode) -> List[str]:
     def _fun(b, x):
         if x.isLeaf:
             b.append(x.label)
@@ -92,7 +173,7 @@ def tips(node : Node) -> List[str]:
     return treefold(node, _fun, [])
 
 
-def tipSet(node : Node) -> Set[str]:
+def tipSet(node: AnyNode) -> Set[str]:
     def _collect(b, d):
         if d.isLeaf:
             b.add(d.label)
@@ -101,7 +182,7 @@ def tipSet(node : Node) -> Set[str]:
     return treefold(node, _collect, set())
 
 
-def partition(xs : List[A], f : Callable[[A], bool]) -> Tuple[List[A], List[A]]:
+def partition(xs: List[A], f: Callable[[A], bool]) -> Tuple[List[A], List[A]]:
     a = []
     b = []
     for x in xs:
@@ -112,15 +193,16 @@ def partition(xs : List[A], f : Callable[[A], bool]) -> Tuple[List[A], List[A]]:
     return (a, b)
 
 
-def clean(node : Node, isRoot : bool = True) -> Node:
+def clean(node: AnyNode, isRoot: bool = True) -> AnyNode:
     """
     Remove nodes that have only one child. Add the branch lengths.
     """
 
-    def _clean(node : Node, isRoot : bool) -> Node:
+    def _clean(node: AnyNode, isRoot: bool) -> AnyNode:
         # remove empty children
         node.kids = [
-            kid for kid in node.kids if kid is not None and kid.data.nleafs > 0
+            kid for kid in node.kids if kid is not None and
+              (kid.data.nleafs is None or kid.data.nleafs > 0)
         ]
         # remove all single-child nodes
         while len(node.kids) == 1:
@@ -128,7 +210,7 @@ def clean(node : Node, isRoot : bool = True) -> Node:
                 node.kids[0].data.length += node.data.length
             node = node.kids[0]
             # remove empty children
-            node.kids = [kid for kid in node.kids if kid.data.nleafs > 0]
+            node.kids = [kid for kid in node.kids if (kid.data.nleafs is None or kid.data.nleafs > 0)]
         # clean all children
         newkids = []
         for kid in node.kids:
@@ -136,48 +218,47 @@ def clean(node : Node, isRoot : bool = True) -> Node:
             if kid.data.isLeaf or kid.kids:
                 newkids.append(kid)
         node.kids = newkids
-        # if `tree` is the entire tree and if the tree contains only one leaf, then
-        # we need to insert a root node
-        if node.data.isLeaf and isRoot:
-            node = Node(kids=[node])
         return node
 
     node = setNLeafs(node)
     return _clean(node, isRoot)
 
 
-def factorByLabel(node : Node, fun : Callable[[str], Optional[str]]) -> Node:
+def factorByLabel(node: AnyNode, fun: Callable[[Optional[str]], Optional[str]]) -> AnyNode:
     """
     Assign factors to nodes based on the node label string
 
     kwargs are passed to the `fun` within the `mapfun` function.
     """
 
-    def mapfun(ndata : NodeData) -> NodeData:
+    def mapfun(ndata: AnyNodeData) -> AnyNodeData:
         ndata.factor = fun(ndata.label)
         return ndata
 
-    return setFactorCounts(treemap(node, mapfun))
+    return treemap(node, mapfun)
 
 
-def factorByField(node : Node, field : int, default : Optional[str] = None, sep : str ="|") -> Node:
+def factorByField(node: AnyNode, field: int, sep: str = "|") -> AnyNode:
     """
     Factor by the <field>th 1-based index in the tip label.
     """
 
-    def _fun(name : str) -> Optional[str]:
-        try:
+    def _fun(name: Optional[str]) -> Optional[str]:
+        if name is None:
+            raise AttributeError("Cannot factor since a leaf has an undefined tip label")
+        else:
             try:
                 return name.split(sep)[field - 1]
-            except:
-                return default
-        except:
-            return default
+            except IndexError:
+                # raised when there are too few fields
+                raise IndexError(f"Cannot access the {field}th field in tip label {name}")
 
     return factorByLabel(node, _fun)
 
 
-def factorByCaptureFun(name : str, pat : Pattern[str], default : Optional[str] = None) -> Optional[str]:
+def factorByCaptureFun(
+    name: Optional[str], pat: Pattern[str], default: Optional[str] = None
+) -> Optional[str]:
     """
     Determine a tip factor using regular expression capture.
 
@@ -188,19 +269,21 @@ def factorByCaptureFun(name : str, pat : Pattern[str], default : Optional[str] =
     matched nothing. The smot convention is to take the last pattern that
     matched. In this case, "USA".
     """
-    if name:
+    if name is not None:
         m = re.search(pat, name)
         if m and m.groups():
             return [x for x in list(m.groups()) if x is not None][-1]
     return default
 
 
-def factorByCapture(node : Node, pat : Pattern[str], default : Optional[str] = None) -> Node:
+def factorByCapture(
+    node: AnyNode, pat: Pattern[str], default: Optional[str] = None
+) -> AnyNode:
     pat = re.compile(pat)
     return factorByLabel(node, lambda x: factorByCaptureFun(x, pat, default=default))
 
 
-def factorByTable(node : Node, table : Dict[str,str], default=None):
+def factorByTable(node: AnyNode, table: Dict[str, str], default=None):
     def _fun(name):
         if name:
             for k, v in table.items():
@@ -211,28 +294,38 @@ def factorByTable(node : Node, table : Dict[str,str], default=None):
     return factorByLabel(node, _fun)
 
 
-def isMonophyletic(node : Node) -> bool:
+def isMonophyletic(node: Node[F, LC, Counter, BL]) -> bool:
     """
-    Check is a branch is monophyletic relative to the defined factors. Assumes
+    Check is a branch is monophyletic relative to the defined factors. Requires
     that `setFactorCounts` has been called on the tree.
     """
     return len(node.data.factorCount) <= 1
 
 
-def getFactor(node : Node) -> Optional[str]:
+def getFactor(node: Node[Optional[str], LC, Counter, BL]) -> Optional[str]:
     """
     Return the first factor that a tree has (in no special order) or if there
-    is no factor, than return None. This function should only be used for
+    is no factor, than return None. This function may only be used for
     monophyletic cases where monophylicity has already been confirmed (see
     isMonophyletic).
     """
-    if node.data.factorCount:
+    if len(node.data.factorCount) > 0:
         return list(node.data.factorCount.keys())[0]
     else:
         return None
 
 
-def imputeMonophyleticFactors(node : Node) -> Node:
+def imputeMonophyleticFactors(node: Node[Optional[str], LC, Counter, BL]) -> Node[Optional[str], LC, Counter, BL]:
+    """
+    For all monophyletic branches, assign all unlabeled tips to the unique factor.
+
+    If setFactorCounts is run after this function, it will change the
+    interpretation of the factorCount field in NodeData. Originally,
+    factorCount is a count of all the labeled data descending from a node. This
+    function does not alter factorCount. However, if setFactorCounts is rerun
+    on this node, then the counts then will include both the labeled and
+    imputed data. So be careful.
+    """
     def setFactors(node, factor):
         def _fun(b):
             b.factor = factor
@@ -242,13 +335,16 @@ def imputeMonophyleticFactors(node : Node) -> Node:
 
     if node.data.factorCount and isMonophyletic(node):
         node = setFactors(node, getFactor(node))
+        newkids = node.kids
     else:
         newkids = [imputeMonophyleticFactors(kid) for kid in node.kids]
         node.kids = newkids
+
     return node
 
 
-def imputePatristicFactors(node : Node) -> Node:
+def imputePatristicFactors(node: Node[Optional[str], LC, FC, BL]) -> Node[Optional[str], LC, FC, BL]:
+
     def kid_fun_(d, ds):
         d.factorDist = dict()
         if d.isLeaf and d.factor:
@@ -288,7 +384,7 @@ def imputePatristicFactors(node : Node) -> Node:
     return node
 
 
-def getLeftmost(node : Node) -> Node:
+def getLeftmost(node: AnyNode) -> AnyNode:
     """
     Recurse down a tree, returning the leftmost leaf
     """
@@ -298,9 +394,7 @@ def getLeftmost(node : Node) -> Node:
         return node
 
 
-def sampleN(node : Node, n : int) -> Node:
-    if not node.data.nleafs:
-        node = setNLeafs(node)
+def sampleN(node: Node[F, int, FC, BL], n: int) -> Node[F, int, FC, BL]:
     if n == 0:
         raise ValueError("n in sampleN much be greater than 0")
     elif n > node.data.nleafs:
@@ -308,7 +402,15 @@ def sampleN(node : Node, n : int) -> Node:
     if not node.kids and not n == 1:
         raise ValueError("Something weird happened in sampleN")
     selection = distribute(n, len(node.kids), [kid.data.nleafs for kid in node.kids])
-    node.kids = [sampleN(kid, m) for kid, m in zip(node.kids, selection) if m > 0]
+    kids_ = []
+    for k, m in zip(node.kids, selection):
+        if m > 0:
+            k.data.nleafs = m
+            k = sampleN(k, m)
+            kids_.append(k)
+
+    node.kids = kids_
+
     if len(node.kids) == 1:
         if node.kids[0].data.length is not None and node.data.length is not None:
             node.kids[0].data.length += node.data.length
@@ -316,7 +418,12 @@ def sampleN(node : Node, n : int) -> Node:
     return node
 
 
-def sampleRandom(node : Node, rng : random.Random, count_fun : Callable[[Iterable[str]], int], keep_fun : Callable[[str], bool]) -> Node:
+def sampleRandom(
+    node: AnyNode,
+    rng: random.Random,
+    count_fun: Callable[[Iterable[str]], int],
+    keep_fun: Callable[[str], bool],
+) -> AnyNode:
     """
     Sample N random tips from node
     """
@@ -326,8 +433,8 @@ def sampleRandom(node : Node, rng : random.Random, count_fun : Callable[[Iterabl
             b.append(d.label)
         return b
 
-    keepers : List[str]
-    samplers : List[str]
+    keepers: List[str]
+    samplers: List[str]
     (keepers, samplers) = partition(treefold(node, _collect, []), keep_fun)
 
     # use the given function count_fun to decide how many tips to sample, but
@@ -351,7 +458,7 @@ def sampleRandom(node : Node, rng : random.Random, count_fun : Callable[[Iterabl
     return sampledTree
 
 
-def distribute(count : int, groups : int, sizes : Optional[List[int]] = None) -> List[int]:
+def distribute(count: int, groups: int, sizes: Optional[List[int]] = None) -> List[int]:
     """
     Break n into k groups
 
@@ -396,33 +503,7 @@ def distribute(count : int, groups : int, sizes : Optional[List[int]] = None) ->
     return selection
 
 
-def setNLeafs(node : Node) -> Node:
-    if not node:
-        return node
-    if node.data.isLeaf:
-        node.data.nleafs = 1
-    else:
-        node.kids = [setNLeafs(kid) for kid in node.kids if kid is not None]
-        node.data.nleafs = sum(kid.data.nleafs for kid in node.kids)
-    return node
-
-
-def setFactorCounts(node : Node) -> Node:
-    if node.data.isLeaf:
-        if node.data.factor:
-            node.data.factorCount = Counter([node.data.factor])
-        else:
-            node.data.factorCount = Counter()
-    else:
-        node.data.factorCount = Counter()
-        node.kids = [setFactorCounts(kid) for kid in node.kids]
-        for kid in node.kids:
-            node.data.factorCount += kid.data.factorCount
-
-    return node
-
-
-def sampleBalanced(node : Node, keep : List[str] = [], maxTips : int = 5):
+def sampleBalanced(node: AnyNode, keep: List[str] = [], maxTips: int = 5) -> Node[F, int, Counter, BL]:
     # recursive sampler
     def _sampleBalanced(node):
         newkids = []
@@ -445,7 +526,7 @@ def sampleBalanced(node : Node, keep : List[str] = [], maxTips : int = 5):
     return clean(_sampleBalanced(node))
 
 
-def sampleParaphyletic(node : Node, **kwargs : Any) -> Node:
+def sampleParaphyletic(node: AnyNode, **kwargs: Any) -> Node[F, LC, Counter, BL]:
 
     # Choose a strategy for sampling
     _sampler = _makeParaphyleticSampler(**kwargs)
@@ -480,28 +561,27 @@ def sampleParaphyletic(node : Node, **kwargs : Any) -> Node:
 # complexity is in sampleParaphyletic, but most of the parameterization happens
 # here in the sampler.
 def _makeParaphyleticSampler(
-    keep : List[str] = [],
-    keep_regex : str = "",
-    proportion : Optional[float] = None,
-    scale : Optional[float] = None,
-    number : Optional[int] = None,
-    minTips : int = 1,
-    seed : Optional[int] = None,
-    keep_ends : bool = False,
+    keep: List[str] = [],
+    keep_regex: str = "",
+    proportion: Optional[float] = None,
+    scale: Optional[float] = None,
+    number: Optional[int] = None,
+    minTips: int = 1,
+    seed: Optional[int] = None,
+    keep_ends: bool = False,
 ) -> Callable[[List[str], str, List[Optional[str]]], List[str]]:
 
     rng = random.Random(seed)
 
     import sys
 
-
     # Choose a sampling algorithm
     # proportional selects samples from the sampling group with 0-1 probability
     if proportion is not None:
 
-        _proportion = cast(float, proportion) 
+        _proportion = cast(float, proportion)
 
-        def _sample(labels : List[str]) -> int:
+        def _sample(labels: List[str]) -> int:
             return min(len(labels), max(minTips, math.ceil(_proportion * len(labels))))
 
     # scale randomly selects s=n^(1/scale) elements from the sampling group
@@ -509,15 +589,17 @@ def _makeParaphyleticSampler(
 
         _scale = cast(float, scale)
 
-        def _sample(labels : List[str]) -> int:
-            return min(len(labels), max(minTips, math.ceil(len(labels) ** (1 / _scale))))
+        def _sample(labels: List[str]) -> int:
+            return min(
+                len(labels), max(minTips, math.ceil(len(labels) ** (1 / _scale)))
+            )
 
     # otherwise choose a particular number of strains
     elif number is not None:
 
         _number = cast(int, number)
 
-        def _sample(labels : List[str]) -> int:
+        def _sample(labels: List[str]) -> int:
             return min(len(labels), _number)
 
     # if no choose is selected, then we're f*cked
@@ -525,19 +607,21 @@ def _makeParaphyleticSampler(
 
         raise ValueError("No sampling strategy given")
 
-    def keep_search(x : str) -> bool:
+    def keep_search(x: str) -> bool:
         return bool(re.search(keep_regex, x))
 
-    def unnone(xs : List[Optional[A]]) -> List[A]:
+    def unnone(xs: List[Optional[A]]) -> List[A]:
         return [x for x in xs if x is not None]
 
     #  Internal sampling function used by sampleParaphyletic
-    def _sampleLabels(labels : List[str], factor : str, ends : List[Optional[str]]) -> List[str]:
+    def _sampleLabels(
+        labels: List[str], factor: str, ends: List[Optional[str]]
+    ) -> List[str]:
         if factor in keep:
             return labels
         else:
-            keepers : List[str] = []
-            samplers : List[str] = labels
+            keepers: List[str] = []
+            samplers: List[str] = labels
             if keep_regex:
                 # The partition function ensures keepers and samplers are non-overlapping
                 (keepers, samplers) = partition(samplers, keep_search)
@@ -553,16 +637,16 @@ def _makeParaphyleticSampler(
                 # sort for reproducibility
                 sample = rng.sample(sorted(samplers), N)
             except ValueError:
-                raise ValueError(f"Bad sample size ({N}) for population of size ({len(labels)})")
+                raise ValueError(
+                    f"Bad sample size ({N}) for population of size ({len(labels)})"
+                )
             return sample + keepers
 
     return _sampleLabels
 
 
 # recursive function for creating sampling groups
-def _selectParaphyletic(
-    node, sampler, selected=set(), paraGroup=set(), paraFactor=None
-):
+def _selectParaphyletic(node, sampler, selected=set(), paraGroup=set(), paraFactor=None):
     # a subtree that is not of the same factor as the parent
     rebelChild = None
     potentialMembers = []
