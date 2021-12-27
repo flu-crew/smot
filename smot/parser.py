@@ -1,7 +1,7 @@
 import parsec as p  # type: ignore
 import re
 from smot.classes import make_Node, make_Tree, Tree
-from typing import (TextIO, List, Dict, TypeVar, Tuple)
+from typing import TextIO, List, Dict, TypeVar, Tuple
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -9,19 +9,19 @@ B = TypeVar("B")
 p_whitespace = p.regex(r"\s*", re.MULTILINE)
 
 
-def read_fh(treefh : TextIO) -> Tree:
+def read_fh(treefh: TextIO) -> Tree:
     rawtree_lines = treefh.readlines()
     rawtree = "".join(rawtree_lines)
     tree = p_tree.parse(rawtree)
     return tree
 
 
-def read_file(treefile : str) -> Tree:
+def read_file(treefile: str) -> Tree:
     with open(treefile, "r") as treefh:
         return read_fh(treefh)
 
 
-def read_text(treestr : str) -> Tree:
+def read_text(treestr: str) -> Tree:
     return p_tree.parse(treestr)
 
 
@@ -63,7 +63,7 @@ p_label = p_figtree_quote ^ p_dquoted(p_dchar) ^ p.regex("[^,:;()[\]]+")
 p_length = p.string(":") >> p_number
 
 
-def toDict(xs : List[Tuple[A,B]]) -> Dict[A,B]:
+def toDict(xs: List[Tuple[A, B]]) -> Dict[A, B]:
     return {k: v for (k, v) in xs}
 
 
@@ -145,7 +145,7 @@ def p_nexus_tree_line():
     return tree
 
 
-def make_tip_color_map(xs : List[Tuple[str, Dict[str, str]]]) -> Dict[str, str]:
+def make_tip_color_map(xs: List[Tuple[str, Dict[str, str]]]) -> Dict[str, str]:
     color_map = dict()
     for (name, form) in xs:
         if form is not None and "!color" in form:
@@ -156,7 +156,7 @@ def make_tip_color_map(xs : List[Tuple[str, Dict[str, str]]]) -> Dict[str, str]:
 p_newick = p_node << p.string(";")
 
 
-def firstTree(xs : List[A]) -> A:
+def firstTree(xs: List[A]) -> A:
     if len(xs) == 1:
         return xs[0]
     elif len(xs) == 0:

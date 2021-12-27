@@ -6,6 +6,7 @@ LC = TypeVar("LC", None, int)
 FC = TypeVar("FC", None, Counter[str])
 BL = TypeVar("BL", None, Optional[float], float)
 
+
 class Tree:
     def __init__(self, colmap: Dict[str, str] = dict(), meta: Dict[str, str] = dict()):
         self.meta: Dict[str, str] = meta
@@ -37,8 +38,10 @@ class NodeData(Generic[F, LC, FC, BL]):
             and self.length == other.length
         )
 
+
 AnyNodeData = NodeData[F, LC, FC, BL]
 BaseNodeData = NodeData[Optional[str], None, None, Optional[float]]
+
 
 class Node(Generic[F, LC, FC, BL]):
     index = 0
@@ -50,8 +53,10 @@ class Node(Generic[F, LC, FC, BL]):
     def __eq__(self, other):
         return self.kids == other.kids and self.data == other.data
 
+
 AnyNode = Node[F, LC, FC, BL]
 BaseNode = Node[Optional[str], None, None, Optional[float]]
+
 
 def make_Tree(
     tree: AnyNode,
@@ -70,9 +75,11 @@ def make_Node(
     length: Optional[float] = None,
     factor: Optional[str] = None,
 ) -> BaseNode:
-    n : BaseNode = Node()
+    n: BaseNode = Node()
     n.kids = kids
-    n.data = make_NodeData(label=label, form=form, length=length, isLeaf=not bool(kids), factor=factor)
+    n.data = make_NodeData(
+        label=label, form=form, length=length, isLeaf=not bool(kids), factor=factor
+    )
     return n
 
 
@@ -81,11 +88,9 @@ def make_NodeData(
     form: Optional[Dict[str, str]],
     length: Optional[float],
     isLeaf: bool,
-    factor: Optional[str] = None
+    factor: Optional[str] = None,
 ) -> BaseNodeData:
-    nd: BaseNodeData = NodeData(
-        label=label, form=form, length=length, isLeaf=isLeaf
-    )
+    nd: BaseNodeData = NodeData(label=label, form=form, length=length, isLeaf=isLeaf)
     nd.factor = factor
     nd.nleafs = None
     nd.factorCount = None

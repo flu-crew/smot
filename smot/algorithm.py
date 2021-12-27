@@ -436,7 +436,8 @@ def sampleN(node: Node[F, LC, FC, BL], n: int) -> Node[F, int, FC, BL]:
     """
     The unassuming counterpart of _sampleN
     """
-    return(_sampleN(setNLeafs(node), n))
+    return _sampleN(setNLeafs(node), n)
+
 
 def _sampleN(node: Node[F, int, FC, BL], n: int) -> Node[F, int, FC, BL]:
     if n == 0:

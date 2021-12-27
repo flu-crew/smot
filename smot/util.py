@@ -1,25 +1,25 @@
 import sys
-from typing import (List, TypeVar, Optional)
+from typing import List, TypeVar, Optional
 
 A = TypeVar("A")
 
 
-def log(msg : str) -> None:
+def log(msg: str) -> None:
     print(msg, file=sys.stderr)
 
 
-def die(msg : str) -> None:
+def die(msg: str) -> None:
     print(msg, file=sys.stderr)
     sys.exit(1)
 
 
-def concat(xss : List[List[A]]) -> List[A]:
-    ys : List[A]
+def concat(xss: List[List[A]]) -> List[A]:
+    ys: List[A]
     ys = []
     for xs in xss:
         ys + xs
     return ys
 
 
-def rmNone(xs : List[Optional[A]]) -> List[A]:
+def rmNone(xs: List[Optional[A]]) -> List[A]:
     return [x for x in xs if x is not None]

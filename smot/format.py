@@ -9,7 +9,7 @@ from typing import (
 )
 
 
-def quote(x : str) -> str:
+def quote(x: str) -> str:
     if "'" in x:
         # escape any double quotes
         x = re.sub('"', '\\"', x)
@@ -21,14 +21,14 @@ def quote(x : str) -> str:
     return x
 
 
-def quoteIf(x : str) -> str:
+def quoteIf(x: str) -> str:
     if set("^,:;()[]'\"").intersection(set(x)):
         return quote(x)
     else:
         return x
 
 
-def newick(node : Union[Tree, AnyNode]) -> str:
+def newick(node: Union[Tree, AnyNode]) -> str:
     if isinstance(node, Tree):
         node_obj = node.tree
     else:
@@ -37,7 +37,7 @@ def newick(node : Union[Tree, AnyNode]) -> str:
     return _newick(node_obj) + ";"
 
 
-def _newick(node : AnyNode) -> str:
+def _newick(node: AnyNode) -> str:
     # allow input to be a Tree object
     if isinstance(node, Tree):
         node = node.tree
@@ -58,14 +58,16 @@ def _newick(node : AnyNode) -> str:
     return s
 
 
-def nexus(treeOrNode : Union[AnyNode, Tree]) -> str:
+def nexus(treeOrNode: Union[AnyNode, Tree]) -> str:
     # allow input to be a Node object
     if isinstance(treeOrNode, Node):
         tree = make_Tree(tree=treeOrNode)
     else:
         tree = treeOrNode
 
-    def _fun(b : List[Tuple[str, Optional[str]]], x : AnyNodeData) -> List[Tuple[str, Optional[str]]]:
+    def _fun(
+        b: List[Tuple[str, Optional[str]]], x: AnyNodeData
+    ) -> List[Tuple[str, Optional[str]]]:
         if x.isLeaf:
             # if colors were set by grep, they will be stored here and they
             # should over-ride the default colors
@@ -82,7 +84,7 @@ def nexus(treeOrNode : Union[AnyNode, Tree]) -> str:
 
     s = ["#NEXUS"]
     if tree.colmap:
-        colortips : List[Tuple[str, Optional[str]]]
+        colortips: List[Tuple[str, Optional[str]]]
         colortips = alg.treefold(tree.tree, _fun, [])
         s.append("begin taxa;")
         s.append(f"\tdimensions ntax={str(len(colortips))};")
