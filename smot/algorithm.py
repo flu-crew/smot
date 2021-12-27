@@ -1,4 +1,4 @@
-from smot.classes import Node, NodeData, F, LC, FC, BL, AnyNode, AnyNodeData
+from smot.classes import Node, NodeData, F, LC, FC, BL, AnyNode, AnyNodeData, make_Node
 from smot.util import die
 from collections import Counter, defaultdict
 import re
@@ -243,6 +243,11 @@ def clean(node: AnyNode, isRoot: bool = True) -> AnyNode:
             if kid.data.isLeaf or kid.kids:
                 newkids.append(kid)
         node.kids = newkids
+
+        # if `tree` is the entire tree and if the tree contains one leaf, then
+        # we need to insert a root node
+        if node.data.isLeaf and isRoot:
+            node = make_Node(kids=[node])
         return node
 
     node = setNLeafs(node)
