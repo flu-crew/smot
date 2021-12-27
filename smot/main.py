@@ -3,9 +3,10 @@ import click
 import os
 import signal
 import sys
-from smot.classes import Node, NodeData
+from smot.classes import (Node, NodeData, Tree, AnyNode, AnyNodeData)
 from smot.util import die
 import smot.format as sf
+from typing import (List, Optional, Union, TextIO, Callable, Tuple, Dict)
 
 INT_SENTINEL = 9999
 
@@ -73,6 +74,16 @@ class ListOfStringsType(click.ParamType):
             )
 
 
+def checkColor(color : str) -> None:
+    try:
+        if(color[0] != '#'):
+            die(f"Expected color hexcode to start with '#', got '{color}'")
+        if(len(color) != 7):
+            die(f"Expected color hexcode to be 7 characters long (e.g., #080808), got '{color}'")
+    except IndexError:
+        die(f"Expected color hexcode to be 7 characters long (e.g., #080808), got '{color}'")
+
+
 ListOfStrings = ListOfStringsType()
 
 dec_default = click.option(
@@ -84,44 +95,52 @@ dec_default = click.option(
 
 
 def factorTree(
-    node,
-    factor_by_capture=None,
-    factor_by_field=None,
-    factor_by_table=None,
-    default=None,
-    impute=False,
-    patristic=False,
+    node : AnyNode,
+    factor_by_capture : Optional[str] = None,
+    factor_by_field : Optional[int] = None,
+    factor_by_table : Optional[str] = None,
+    default : Optional[str] =None,
+    impute : bool = False,
+    patristic : bool = False,
 ):
     import smot.algorithm as alg
+    import re
 
     if factor_by_field is not None:
-        try:
-            field = int(factor_by_field)
-        except ValueError:
-            die(f"Expected a positive integer for field --factor-by-field, got '{factor_by_field}'")
+        field_index = factor_by_field
+        if field_index < 1:
+            die(
+                f"Expected a positive integer for field --factor-by-field, got '{factor_by_field}'"
+            )
         if default:
-            die(f"I'm sorry, I can't let you do that. Using --default with --factor-by-field is unsafe.")
-        node = alg.factorByField(node, field)
+            die(
+                f"I'm sorry, I can't let you do that. Using --default with --factor-by-field is unsafe."
+            )
+        factoredNode = alg.factorByField(node, field_index)
     elif factor_by_capture is not None:
-        node = alg.factorByCapture(node, pat=factor_by_capture, default=default)
+        pattern = re.compile(factor_by_capture)
+        factoredNode = alg.factorByCapture(node, pat=pattern, default=default)
     elif factor_by_table is not None:
         with open(factor_by_table, "r") as fh:
             try:
-                table = {k : v for (k,v) in [row.strip().split("\t") for row in fh.readlines()]}
+                table = {
+                    k: v
+                    for (k, v) in [row.strip().split("\t") for row in fh.readlines()]
+                }
             except ValueError:
-                raise "Expected two columns in --factor-by-table file"
+                die("Expected two columns in --factor-by-table file")
 
-            node = alg.factorByTable(node, table=table, default=default)
+            factoredNode = alg.factorByTable(node, table=table, default=default)
 
     if patristic:
-        node = alg.imputePatristicFactors(node)
+        return alg.imputePatristicFactors(factoredNode)
     elif impute:
-        node = alg.imputeMonophyleticFactors(node)
+        return alg.imputeMonophyleticFactors(factoredNode)
+    else:
+        return factoredNode
 
-    return node
 
-
-def read_tree(treefile):
+def read_tree(treefile : TextIO) -> Tree:
     from smot.parser import read_fh
 
     return read_fh(treefile)
@@ -133,32 +152,32 @@ dec_tree = click.argument("TREE", default=sys.stdin, type=click.File())
 #      smot tips [<filename>]
 @click.command()
 @dec_tree
-def tips(tree):
+def tips(tree : TextIO) -> None:
     """
     Print the tree tip labels. The order of tips matches the order in the tree
     (top-to-bottom).
     """
     import smot.algorithm as alg
 
-    tree = read_tree(tree)
-    tree.tree = alg.setNLeafs(tree.tree)
+    tree_obj = read_tree(tree)
+    tree_obj.tree = alg.setNLeafs(tree_obj.tree)
 
-    for tip in alg.tips(tree.tree):
+    for tip in alg.tips(tree_obj.tree):
         print(tip)
 
 
 @click.command()
 @dec_tree
-def stat(tree):
+def stat(tree : TextIO) -> None:
     """
     Display statistics for an input tree
     """
     import smot.algorithm as alg
 
-    tree = read_tree(tree)
-    tree.tree = alg.setNLeafs(tree.tree)
+    tree_obj = read_tree(tree)
+    tree_obj.tree = alg.setNLeafs(tree_obj.tree)
 
-    tips = list(alg.tips(tree.tree))
+    tips = list(alg.tips(tree_obj.tree))
 
     print(len(tips))
 
@@ -265,16 +284,16 @@ dec_patristic = click.option(
 @dec_newick
 @dec_tree
 def equal(
-    factor_by_capture,
-    factor_by_field,
-    factor_by_table,
-    keep,
-    default,
-    max_tips,
-    zero,
-    newick,
-    tree,
-):
+    factor_by_capture : Optional[str],
+    factor_by_field : Optional[int],
+    factor_by_table : Optional[str],
+    keep : List[str],
+    default : Optional[str],
+    max_tips : int,
+    zero : bool,
+    newick : bool,
+    tree : TextIO,
+) -> None:
     """
     Equal sampling. Descend from root to tip. At each node, determine if each
     subtree contains a single factor. If a subtree is not monophyletic, recurse
@@ -290,20 +309,20 @@ def equal(
 
     import smot.algorithm as alg
 
-    tree = read_tree(tree)
-    tree.tree = factorTree(
-        node=tree.tree,
+    tree_obj = read_tree(tree)
+    tree_obj.tree = factorTree(
+        node=tree_obj.tree,
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
     )
-    tree.tree = alg.sampleBalanced(tree.tree, keep=keep, maxTips=max_tips)
+    tree_obj.tree = alg.sampleBalanced(tree_obj.tree, keep=keep, maxTips=max_tips)
 
     if newick:
-        print(sf.newick(tree))
+        print(sf.newick(tree_obj))
     else:
-        print(sf.nexus(tree))
+        print(sf.nexus(tree_obj))
 
 
 @click.command()
@@ -320,21 +339,21 @@ def equal(
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_tree
 def mono(
-    factor_by_capture,
-    factor_by_field,
-    factor_by_table,
-    keep,
-    keep_regex,
-    default,
-    min_tips,
-    proportion,
-    scale,
-    number,
-    seed,
-    newick,
-    zero,
-    tree,
-):
+    factor_by_capture : Optional[str],
+    factor_by_field : Optional[int],
+    factor_by_table : Optional[str],
+    keep : List[str],
+    keep_regex : List[str],
+    default : Optional[str],
+    min_tips : int,
+    proportion : Optional[float],
+    scale : Optional[float],
+    number : Optional[int],
+    seed : Optional[int],
+    newick : bool,
+    zero : bool,
+    tree : TextIO,
+) -> None:
     """
     Proportional sampling. Randomly sample p (0 to 1, from --proportion) tips
     from each monophyletic (relative to factors) subtree. Retain at least N
@@ -346,16 +365,16 @@ def mono(
     if not (proportion or scale or number):
         die("Please add either a --proportion or --scale or --number option")
 
-    tree = read_tree(tree)
-    tree.tree = factorTree(
-        node=tree.tree,
+    tree_obj = read_tree(tree)
+    tree_obj.tree = factorTree(
+        node=tree_obj.tree,
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
     )
-    tree.tree = alg.sampleMonophyletic(
-        tree.tree,
+    tree_obj.tree = alg.sampleMonophyletic(
+        tree_obj.tree,
         keep=keep,
         keep_regex=keep_regex,
         proportion=proportion,
@@ -366,9 +385,9 @@ def mono(
     )
 
     if newick:
-        print(sf.newick(tree))
+        print(sf.newick(tree_obj))
     else:
-        print(sf.nexus(tree))
+        print(sf.nexus(tree_obj))
 
 
 @click.command()
@@ -385,21 +404,21 @@ def mono(
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_tree
 def para(
-    factor_by_capture,
-    factor_by_field,
-    factor_by_table,
-    keep,
-    keep_regex,
-    default,
-    min_tips,
-    proportion,
-    scale,
-    number,
-    seed,
-    newick,
-    zero,
-    tree,
-):
+    factor_by_capture : Optional[str],
+    factor_by_field : Optional[int],
+    factor_by_table :Optional[str],
+    keep : List[str],
+    keep_regex : List[str],
+    default : Optional[str],
+    min_tips : int,
+    proportion : Optional[float],
+    scale : Optional[float],
+    number : Optional[int],
+    seed : Optional[int],
+    newick : bool,
+    zero : bool,
+    tree : TextIO,
+) -> None:
     """
     Paraphyletic sampling. The sampling algorithm starts at the root and
     descends to the tips. At each node, we store monophyletic subtrees in a
@@ -415,16 +434,16 @@ def para(
     if not (proportion or scale or number):
         die("Please add either a --proportion or --scale or --number option")
 
-    tree = read_tree(tree)
-    tree.tree = factorTree(
-        node=tree.tree,
+    tree_obj = read_tree(tree)
+    tree_obj.tree = factorTree(
+        node=tree_obj.tree,
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
         default=default,
     )
-    tree.tree = alg.sampleParaphyletic(
-        tree.tree,
+    tree_obj.tree = alg.sampleParaphyletic(
+        tree_obj.tree,
         keep=keep,
         keep_regex=keep_regex,
         proportion=proportion,
@@ -435,9 +454,9 @@ def para(
     )
 
     if newick:
-        print(sf.newick(tree))
+        print(sf.newick(tree_obj))
     else:
-        print(sf.nexus(tree))
+        print(sf.nexus(tree_obj))
 
 
 @click.command()
@@ -451,15 +470,15 @@ def para(
 @dec_newick
 @dec_tree
 def factor(
-    method,
-    factor_by_capture,
-    factor_by_field,
-    factor_by_table,
-    default,
-    impute,
-    patristic,
-    newick,
-    tree,
+    method : str,
+    factor_by_capture : Optional[str],
+    factor_by_field : Optional[int],
+    factor_by_table : Optional[str],
+    default : Optional[str],
+    impute : bool,
+    patristic : bool,
+    newick : bool,
+    tree : TextIO,
 ) -> None:
     """
     Impute, annotate with, and/or tabulate factors. The --impute option will
@@ -472,9 +491,9 @@ def factor(
 
     import smot.algorithm as alg
 
-    tree = read_tree(tree)
-    tree.tree = factorTree(
-        node=tree.tree,
+    tree_obj = read_tree(tree)
+    tree_obj.tree = factorTree(
+        node=tree_obj.tree,
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
@@ -487,16 +506,21 @@ def factor(
     # (possibly imputed) factor
     if method.lower() == "table":
 
-        def _fun_treefold(b, x):
+        def _fun_treefold(b : List[str], x : AnyNodeData) -> List[str]:
             if x.isLeaf:
                 if x.factor is None:
-                    factor = default
+                    if default is None:
+                        factor = ""
+                    else:
+                        factor = default
                 else:
                     factor = x.factor
                 b.append(f"{x.label}\t{factor}")
             return b
 
-        for row in alg.treefold(tree.tree, _fun_treefold, []):
+        row : str
+        b : List[str] = []
+        for row in alg.treefold(tree_obj.tree, _fun_treefold, b):
             print(row)
 
     # prepend or append the factor to the tip labels and print the resulting tree
@@ -512,12 +536,12 @@ def factor(
                     x.label = f"{x.label}|{x.factor}"
             return x
 
-        tree.tree = alg.treemap(tree.tree, _fun_treemap)
+        tree_obj.tree = alg.treemap(tree_obj.tree, _fun_treemap)
 
         if newick:
-            print(sf.newick(tree))
+            print(sf.newick(tree_obj))
         else:
-            print(sf.nexus(tree))
+            print(sf.nexus(tree_obj))
 
 
 #      smot tipsed <pattern> <replacement> [<filename>]
@@ -526,7 +550,7 @@ def factor(
 @click.argument("REPLACEMENT", type=str)
 @dec_newick
 @dec_tree
-def tipsed(pattern, replacement, newick, tree):
+def tipsed(pattern : str, replacement : str, newick : bool, tree : TextIO) -> None:
     """
     Search and replace patterns in tip labels.
     """
@@ -536,19 +560,19 @@ def tipsed(pattern, replacement, newick, tree):
 
     pat = re.compile(pattern)
 
-    def fun_(nodeData):
+    def fun_(nodeData : AnyNodeData) -> AnyNodeData:
         if nodeData.label:
             nodeData.label = re.sub(pat, replacement, nodeData.label)
         return nodeData
 
-    tree = read_tree(tree)
-    tree.tree = alg.treemap(tree.tree, fun_)
-    tree.colmap = {re.sub(pat, replacement, k): v for (k, v) in tree.colmap.items()}
+    tree_obj = read_tree(tree)
+    tree_obj.tree = alg.treemap(tree_obj.tree, fun_)
+    tree_obj.colmap = {re.sub(pat, replacement, k): v for (k, v) in tree_obj.colmap.items()}
 
     if newick:
-        print(sf.newick(tree))
+        print(sf.newick(tree_obj))
     else:
-        print(sf.nexus(tree))
+        print(sf.nexus(tree_obj))
 
 
 @click.command()
@@ -567,7 +591,7 @@ def tipsed(pattern, replacement, newick, tree):
 )
 @dec_newick
 @dec_tree
-def grep(pattern, tree, invert_match, perl, newick, file):
+def grep(pattern : str, tree : TextIO, invert_match : bool, perl : bool, newick : bool, file : bool):
     """
     Prune a tree to preserve only the tips with that match a pattern.
     """
@@ -584,25 +608,25 @@ def grep(pattern, tree, invert_match, perl, newick, file):
         if invert_match:
             matcher = lambda s: not re.search(regex, s)
         else:
-            matcher = lambda s: re.search(regex, s)
+            matcher = lambda s: bool(re.search(regex, s))
     else:
         if invert_match:
             matcher = lambda s: pattern not in s
         else:
             matcher = lambda s: pattern in s
 
-    def fun_(node):
+    def fun_(node : AnyNode) -> List[AnyNode]:
         return [
             kid for kid in node.kids if (not kid.data.isLeaf or matcher(kid.data.label))
         ]
 
-    tree = read_tree(tree)
-    tree.tree = alg.clean(alg.treecut(tree.tree, fun_))
+    tree_obj = read_tree(tree)
+    tree_obj.tree = alg.clean(alg.treecut(tree_obj.tree, fun_))
 
     if newick:
-        print(sf.newick(tree))
+        print(sf.newick(tree_obj))
     else:
-        print(sf.nexus(tree))
+        print(sf.nexus(tree_obj))
 
 
 @click.command(name="filter")
@@ -653,39 +677,39 @@ def grep(pattern, tree, invert_match, perl, newick, file):
 @dec_tree
 def filter_cmd(
     # conditions
-    all_match,
-    some_match,
-    none_match,
-    larger_than,
-    smaller_than,
+    all_match : List[str],
+    some_match : List[str],
+    none_match : List[str],
+    larger_than : Optional[int],
+    smaller_than : Optional[int],
     # actions
-    remove,
-    color,
-    sample,
-    replace,
+    remove : bool,
+    color : Optional[str],
+    sample : Optional[float],
+    replace : Tuple[str, str],
     # factor methods
-    factor_by_capture,
-    factor_by_field,
-    factor_by_table,
-    default,
+    factor_by_capture : Optional[str],
+    factor_by_field : Optional[int],
+    factor_by_table : Optional[str],
+    default : Optional[str],
     # phylogenetic options
-    patristic,
-    seed,
+    patristic : bool,
+    seed : Optional[int],
     # boilerplate
-    newick,
-    tree,
+    newick : bool,
+    tree : TextIO,
 ):
     """
     An advanced tool for performaing actions (remove, color, sample, or
     replace) on monophyletic groups that meet specified conditions (all-match,
-    some-match, etc.
+    some-match, etc).
     """
     import smot.algorithm as alg
     import re
 
-    tree = read_tree(tree)
-    tree.tree = factorTree(
-        node=tree.tree,
+    tree_obj = read_tree(tree)
+    tree_obj.tree = factorTree(
+        node=tree_obj.tree,
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
@@ -693,7 +717,7 @@ def filter_cmd(
         patristic=patristic,
     )
 
-    def condition(node):
+    def condition(node : AnyNode) -> bool:
         tips = alg.tips(node)
         return (
             (not larger_than or len(tips) > larger_than)
@@ -721,9 +745,11 @@ def filter_cmd(
             )
         )
 
+    action : Callable[[AnyNode], Optional[AnyNode]]
     if remove:
         action = lambda x: None
     elif color:
+        checkColor(color)
         action = lambda x: alg.colorTree(x, color)
     elif sample:
         action = lambda x: alg.sampleMonophyletic(
@@ -731,19 +757,19 @@ def filter_cmd(
         )
     elif replace:
 
-        def _fun(d):
+        def _fun(d : AnyNodeData) -> AnyNodeData:
             d.label = re.sub(replace[0], replace[1], d.label)
             return d
 
         action = lambda x: alg.treemap(x, _fun)
 
-    tree.tree = alg.filterMono(tree.tree, condition=condition, action=action)
-    tree.tree = alg.clean(tree.tree)
+    tree_obj.tree = alg.filterMono(tree_obj.tree, condition=condition, action=action)
+    tree_obj.tree = alg.clean(tree_obj.tree)
 
     if newick:
-        print(sf.newick(tree))
+        print(sf.newick(tree_obj))
     else:
-        print(sf.nexus(tree))
+        print(sf.nexus(tree_obj))
 
 
 @click.command()
@@ -752,30 +778,32 @@ def filter_cmd(
     "-P", "--perl", is_flag=True, help="Interpret the pattern as a regular expression"
 )
 @dec_tree
-def leaf(pattern, perl, tree):
+def leaf(pattern : List[Tuple[str, str]], perl : bool, tree : TextIO) -> None:
     """
     Color the tips on a tree.
+
+    Output is always in nexus format.
 
     smot color -p "swine" "#FFA500" -p "2020-" "#00FF00" my.tre > color.tre
     """
     import smot.algorithm as alg
     import re
 
-    tree = read_tree(tree)
+    tree_obj = read_tree(tree)
 
-    tips = alg.tips(tree.tree)
+    tips = alg.tips(tree_obj.tree)
 
     for (pat_str, col) in pattern:
         if perl:
             pat = re.compile(pat_str)
-            matcher = lambda x: re.search(pat, x)
+            matcher = lambda x: bool(re.search(pat, x))
         else:
             matcher = lambda x: pat_str in x
         for tip in tips:
             if matcher(tip):
-                tree.colmap[tip] = col
+                tree_obj.colmap[tip] = col
 
-    print(sf.nexus(tree))
+    print(sf.nexus(tree_obj))
 
 
 colormap_arg = click.option(
@@ -786,7 +814,7 @@ colormap_arg = click.option(
 )
 
 
-def chooseColorScheme(factors):
+def chooseColorScheme(factors : List[str]) -> Dict[str, str]:
     # these colors are adapted from Paul Tol's notes here: https://personal.sron.nl/~pault/#sec:qualitative
     if len(factors) == 2:
         # orange and blue
@@ -820,21 +848,21 @@ def chooseColorScheme(factors):
 
 
 def colorBranches(
-    is_para, factor_by_capture, factor_by_field, factor_by_table, colormap, tree
+    is_para : bool, factor_by_capture : Optional[str], factor_by_field : Optional[int], factor_by_table : Optional[str], colormap : Optional[str], tree : TextIO
 ):
     import smot.algorithm as alg
 
-    tree = read_tree(tree)
+    tree_obj = read_tree(tree)
 
-    tree.tree = factorTree(
-        node=tree.tree,
+    tree_obj.tree = factorTree(
+        node=tree_obj.tree,
         factor_by_capture=factor_by_capture,
         factor_by_field=factor_by_field,
         factor_by_table=factor_by_table,
     )
-    tree.tree = alg.setFactorCounts(tree.tree)
+    tree_obj.tree = alg.setFactorCounts(tree_obj.tree)
 
-    factors = sorted(list(tree.tree.data.factorCount.keys()))
+    factors = sorted(list(tree_obj.tree.data.factorCount.keys()))
 
     _colormap = dict()
     if colormap:
@@ -855,11 +883,11 @@ def colorBranches(
         _colormap = chooseColorScheme(factors)
 
     if is_para:
-        tree.tree = alg.colorPara(tree.tree, colormap=_colormap)
+        tree_obj.tree = alg.colorPara(tree_obj.tree, colormap=_colormap)
     else:
-        tree.tree = alg.colorMono(tree.tree, colormap=_colormap)
+        tree_obj.tree = alg.colorMono(tree_obj.tree, colormap=_colormap)
 
-    print(sf.nexus(tree))
+    print(sf.nexus(tree_obj))
 
 
 @click.command(name="mono")
@@ -895,31 +923,31 @@ def para_color_cmd(**kwargs):
     help="Write output in newick format (metadata will be lost)",
 )
 @dec_tree
-def rm_color(newick, tree):
+def rm_color(newick : bool, tree : TextIO) -> None:
     """
     Remove all color annotations from a tree
     """
     import smot.algorithm as alg
 
-    tree = read_tree(tree)
-    tree.colmap = dict()
+    tree_obj = read_tree(tree)
+    tree_obj.colmap = dict()
 
     def _fun(d):
         if d.form and "!color" in d.form:
             del d.form["!color"]
         return d
 
-    tree.tree = alg.treemap(tree.tree, _fun)
+    tree_obj.tree = alg.treemap(tree_obj.tree, _fun)
 
     if newick:
-        print(sf.newick(tree))
+        print(sf.newick(tree_obj))
     else:
-        print(sf.nexus(tree))
+        print(sf.nexus(tree_obj))
 
 
 # Remove all black color
-def make_unblack(colmap):
-    def unblack(x):
+def make_unblack(colmap : Dict[str,str]) -> Callable[[AnyNodeData], AnyNodeData]:
+    def unblack(x : AnyNodeData) -> AnyNodeData:
         if "!color" in x.form and x.form["!color"] == "#000000":
             del x.form["!color"]
         if x.isLeaf and x.label in colmap and colmap[x.label] == "#000000":
@@ -930,7 +958,7 @@ def make_unblack(colmap):
 
 
 # color nodes by tip
-def make_tip2node(colmap):
+def make_tip2node(colmap : Dict[str, str]) -> Callable[[AnyNodeData, List[AnyNodeData]], AnyNodeData]:
     def tip2node(x, kids):
         child_node_colors = [
             kid.form["!color"]
@@ -949,7 +977,7 @@ def make_tip2node(colmap):
 
 
 # color tips by node
-def make_node2tip(colmap):
+def make_node2tip(colmap : Dict[str,str]) -> Callable[[AnyNodeData, AnyNodeData], AnyNodeData]:
     def node2tip(x, kid):
         if "!color" in x.form:
             if not "!color" in kid.form:
@@ -963,37 +991,37 @@ def make_node2tip(colmap):
 
 @click.command(name="pull")
 @dec_tree
-def pull_color(tree):
+def pull_color(tree : TextIO) -> None:
     "Pull colors from tips to nodes"
 
     import smot.algorithm as alg
 
-    tree = read_tree(tree)
+    tree_obj = read_tree(tree)
 
-    colmap = tree.colmap
+    colmap = tree_obj.colmap
 
-    tree.tree = alg.treemap(tree.tree, make_unblack(colmap))
-    tree.tree = alg.treepull(tree.tree, make_tip2node(colmap))
-    tree.tree = alg.treepush(tree.tree, make_node2tip(colmap))
+    tree_obj.tree = alg.treemap(tree_obj.tree, make_unblack(colmap))
+    tree_obj.tree = alg.treepull(tree_obj.tree, make_tip2node(colmap))
+    tree_obj.tree = alg.treepush(tree_obj.tree, make_node2tip(colmap))
 
-    print(sf.nexus(tree))
+    print(sf.nexus(tree_obj))
 
 
 @click.command(name="push")
 @dec_tree
-def push_color(tree):
+def push_color(tree : TextIO):
     "Push colors from nodes to tips"
 
     import smot.algorithm as alg
 
-    tree = read_tree(tree)
+    tree_obj = read_tree(tree)
 
-    colmap = tree.colmap
+    colmap = tree_obj.colmap
 
-    tree.tree = alg.treemap(tree.tree, make_unblack(colmap))
-    tree.tree = alg.treepush(tree.tree, make_node2tip(colmap))
+    tree_obj.tree = alg.treemap(tree_obj.tree, make_unblack(colmap))
+    tree_obj.tree = alg.treepush(tree_obj.tree, make_node2tip(colmap))
 
-    print(sf.nexus(tree))
+    print(sf.nexus(tree_obj))
 
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])

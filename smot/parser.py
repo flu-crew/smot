@@ -1,24 +1,27 @@
 import parsec as p  # type: ignore
 import re
-from smot.util import die
-from smot.classes import make_Node, make_Tree
+from smot.classes import make_Node, make_Tree, Tree
+from typing import (TextIO, List, Dict, TypeVar, Tuple)
+
+A = TypeVar("A")
+B = TypeVar("B")
 
 p_whitespace = p.regex(r"\s*", re.MULTILINE)
 
 
-def read_fh(treefh):
-    rawtree = treefh.readlines()
-    rawtree = "".join(rawtree)
+def read_fh(treefh : TextIO) -> Tree:
+    rawtree_lines = treefh.readlines()
+    rawtree = "".join(rawtree_lines)
     tree = p_tree.parse(rawtree)
     return tree
 
 
-def read_file(treefile):
+def read_file(treefile : str) -> Tree:
     with open(treefile, "r") as treefh:
         return read_fh(treefh)
 
 
-def read_text(treestr):
+def read_text(treestr : str) -> Tree:
     return p_tree.parse(treestr)
 
 
@@ -60,7 +63,7 @@ p_label = p_figtree_quote ^ p_dquoted(p_dchar) ^ p.regex("[^,:;()[\]]+")
 p_length = p.string(":") >> p_number
 
 
-def toDict(xs):
+def toDict(xs : List[Tuple[A,B]]) -> Dict[A,B]:
     return {k: v for (k, v) in xs}
 
 
@@ -72,7 +75,9 @@ p_term = (p_label + p.optional(p_format) + p.optional(p_length)).parsecmap(
     lambda x: (x[0][0], x[0][1], x[1])
 )
 
-p_leaf = p_term.parsecmap(lambda x: make_Node(kids=[], label=x[0], form=x[1], length=x[2]))
+p_leaf = p_term.parsecmap(
+    lambda x: make_Node(kids=[], label=x[0], form=x[1], length=x[2])
+)
 p_info = (p.optional(p_label) + p.optional(p_format) + p.optional(p_length)).parsecmap(
     lambda x: (x[0][0], x[0][1], x[1])
 )
@@ -109,7 +114,7 @@ def p_nexus_section():
         p.regex("begin\s+") >> p.regex("[^; ]*", re.I) << p.regex("\s*;\s*\n")
     ).parsecmap(lambda x: x.lower())
     if tag == "trees":
-        val = yield p.many1(p_nexus_tree_line).parsecmap(dieIfMultiple)
+        val = yield p.many1(p_nexus_tree_line).parsecmap(firstTree)
     # The only thing I currently use the taxalist for is to extract colors. It
     # can also be used as a map from integer indices in the newick to field
     # names, but this is not yet something I want to support.
@@ -140,7 +145,7 @@ def p_nexus_tree_line():
     return tree
 
 
-def make_tip_color_map(xs):
+def make_tip_color_map(xs : List[Tuple[str, Dict[str, str]]]) -> Dict[str, str]:
     color_map = dict()
     for (name, form) in xs:
         if form is not None and "!color" in form:
@@ -151,15 +156,15 @@ def make_tip_color_map(xs):
 p_newick = p_node << p.string(";")
 
 
-def dieIfMultiple(xs):
+def firstTree(xs : List[A]) -> A:
     if len(xs) == 1:
         return xs[0]
     elif len(xs) == 0:
-        die(
+        raise ValueError(
             "Failed to parse tree. The tree may be in an unsupported format (only Nexus and Newick are supported) or the tip labels may have strange characters or escape conventions. If you are sure this is a valid tree, send it to the maintainer and ask them to fix the smot parser."
         )
     else:
-        die(f"Expected a single entry in this NEXUS file, found {len(xs)}")
+        raise ValueError(f"Expected a single entry in this NEXUS file, found {len(xs)}")
 
 
 p_tree = p_nexus ^ p_newick.parsecmap(make_Tree)

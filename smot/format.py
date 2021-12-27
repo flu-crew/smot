@@ -1,9 +1,15 @@
-from smot.classes import Node, Tree
+from smot.classes import Node, Tree, make_Tree, AnyNode, AnyNodeData
 import smot.algorithm as alg
 import re
+from typing import (
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
 
-def quote(x):
+def quote(x : str) -> str:
     if "'" in x:
         # escape any double quotes
         x = re.sub('"', '\\"', x)
@@ -15,18 +21,23 @@ def quote(x):
     return x
 
 
-def quoteIf(x):
+def quoteIf(x : str) -> str:
     if set("^,:;()[]'\"").intersection(set(x)):
         return quote(x)
     else:
         return x
 
 
-def newick(node):
-    return _newick(node) + ";"
+def newick(node : Union[Tree, AnyNode]) -> str:
+    if isinstance(node, Tree):
+        node_obj = node.tree
+    else:
+        node_obj = node
+
+    return _newick(node_obj) + ";"
 
 
-def _newick(node):
+def _newick(node : AnyNode) -> str:
     # allow input to be a Tree object
     if isinstance(node, Tree):
         node = node.tree
@@ -47,38 +58,41 @@ def _newick(node):
     return s
 
 
-def nexus(tree):
+def nexus(treeOrNode : Union[AnyNode, Tree]) -> str:
     # allow input to be a Node object
-    if isinstance(tree, Node):
-        tree = Tree(tree=tree)
+    if isinstance(treeOrNode, Node):
+        tree = make_Tree(tree=treeOrNode)
+    else:
+        tree = treeOrNode
 
-    def _fun(b, x):
+    def _fun(b : List[Tuple[str, Optional[str]]], x : AnyNodeData) -> List[Tuple[str, Optional[str]]]:
         if x.isLeaf:
             # if colors were set by grep, they will be stored here and they
             # should over-ride the default colors
             if x.labelColor:
-                color = x.data.labelColor
+                color = x.labelColor
             # colors from the input nexus file
             elif x.label in tree.colmap:
                 color = tree.colmap[x.label]
             # no colors are available
             else:
-                color = ""
+                color = None
             b.append((x.label, color))
         return b
 
     s = ["#NEXUS"]
     if tree.colmap:
+        colortips : List[Tuple[str, Optional[str]]]
         colortips = alg.treefold(tree.tree, _fun, [])
         s.append("begin taxa;")
         s.append(f"\tdimensions ntax={str(len(colortips))};")
         s.append("\ttaxlabels")
         for (tip, color) in sorted(colortips):
-            if color:
-                color = f"[&!color={color}]"
+            if color is not None:
+                color_str = f"[&!color={color}]"
             else:
-                color = ""
-            s.append(f"\t{quote(tip)}{color}")
+                color_str = ""
+            s.append(f"\t{quote(tip)}{color_str}")
         s.append(";")
         s.append("end;\n")
     s.append("begin trees;")

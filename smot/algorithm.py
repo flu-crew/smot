@@ -1,4 +1,4 @@
-from smot.classes import Node, NodeData, F, LC, FC, BL
+from smot.classes import Node, NodeData, F, LC, FC, BL, AnyNode, AnyNodeData
 from smot.util import die
 from collections import Counter, defaultdict
 import re
@@ -7,23 +7,22 @@ import random
 from typing import (
     Any,
     Callable,
-    List,
-    Set,
-    Tuple,
-    Union,
     Dict,
+    Iterable,
+    List,
     Optional,
     Pattern,
-    Iterable,
+    Set,
+    Sized,
+    Tuple,
     TypeVar,
+    Union,
     cast,
 )
 
-AnyNode = Node[F, LC, FC, BL]
-AnyNodeData = NodeData[F, LC, FC, BL]
-
 # A type variable that can happily be anything
 A = TypeVar("A")
+
 
 def treemap(node: AnyNode, fun: Callable[[AnyNodeData], AnyNodeData]) -> AnyNode:
     """
@@ -69,7 +68,9 @@ def treecut(node: AnyNode, fun: Callable[[AnyNode], List[AnyNode]]) -> AnyNode:
     return node
 
 
-def treepull(node: AnyNode, fun: Callable[[AnyNodeData, List[AnyNodeData]], AnyNodeData]) -> AnyNode:
+def treepull(
+    node: AnyNode, fun: Callable[[AnyNodeData, List[AnyNodeData]], AnyNodeData]
+) -> AnyNode:
     """
     Change parent based on children
 
@@ -85,7 +86,9 @@ def treepull(node: AnyNode, fun: Callable[[AnyNodeData, List[AnyNodeData]], AnyN
     return node
 
 
-def treepush(node: AnyNode, fun: Callable[[AnyNodeData, AnyNodeData], AnyNodeData]) -> AnyNode:
+def treepush(
+    node: AnyNode, fun: Callable[[AnyNodeData, AnyNodeData], AnyNodeData]
+) -> AnyNode:
     """
     Change children based on parent
 
@@ -100,7 +103,11 @@ def treepush(node: AnyNode, fun: Callable[[AnyNodeData, AnyNodeData], AnyNodeDat
     return node
 
 
-def requireBranchLengths(node : Node[F, LC, FC, BL]) -> Node[F, LC, FC, float]:
+def unnone(xs: List[Optional[A]]) -> List[A]:
+    return [x for x in xs if x is not None]
+
+
+def requireBranchLengths(node: Node[F, LC, FC, BL]) -> Node[F, LC, FC, float]:
     """
     Assert that a node contains branch annotations throughout.
 
@@ -127,39 +134,41 @@ def setNLeafs(node: Node[F, LC, FC, BL]) -> Node[F, int, FC, BL]:
     """
     if node.data.isLeaf:
         n = 1
+        kids_ = []
     else:
         kids_ = [setNLeafs(kid) for kid in node.kids if kid is not None]
         n = sum(kid.data.nleafs for kid in kids_)
 
     node_ = cast(Node[F, int, FC, BL], node)
     node_.data = cast(NodeData[F, int, FC, BL], node.data)
-    node.data.nleafs = n # type: ignore
+    node.data.nleafs = n  # type: ignore
     node_.kids = kids_
     return node_
 
 
-def setFactorCounts(node: Node[F, LC, FC, BL]) -> Node[F, LC, Counter, BL]:
+def setFactorCounts(node: Node[F, LC, FC, BL]) -> Node[F, LC, Counter[str], BL]:
     """
     Count the factors descending from each node.
 
     This is done solely to improve performance in some of the algorithms.
     """
-    n : Counter
+    n: Counter[str]
     if node.data.isLeaf:
         if node.data.factor:
             n = Counter([node.data.factor])
         else:
             n = Counter()
+        kids_ = []
     else:
         n = Counter()
         kids_ = [setFactorCounts(kid) for kid in node.kids]
         for kid in kids_:
             n += kid.data.factorCount
 
-    node_ = cast(Node[F, LC, Counter, BL], node)
-    node_.kids = kids_ 
-    node_.data = cast(NodeData[F, LC, Counter, BL], node.data) 
-    node_.data.factorCount = n # type: ignore
+    node_ = cast(Node[F, LC, Counter[str], BL], node)
+    node_.kids = kids_
+    node_.data = cast(NodeData[F, LC, Counter[str], BL], node.data)
+    node_.data.factorCount = n  # type: ignore
 
     return node_
 
@@ -182,7 +191,7 @@ def tipSet(node: AnyNode) -> Set[str]:
     return treefold(node, _collect, set())
 
 
-def partition(xs: List[A], f: Callable[[A], bool]) -> Tuple[List[A], List[A]]:
+def partition_list(xs: List[A], f: Callable[[A], bool]) -> Tuple[List[A], List[A]]:
     a = []
     b = []
     for x in xs:
@@ -190,6 +199,17 @@ def partition(xs: List[A], f: Callable[[A], bool]) -> Tuple[List[A], List[A]]:
             a.append(x)
         else:
             b.append(x)
+    return (a, b)
+
+
+def partition_set(xs: Set[A], f: Callable[[A], bool]) -> Tuple[Set[A], Set[A]]:
+    a: Set[A] = set()
+    b: Set[A] = set()
+    for x in xs:
+        if f(x):
+            a.add(x)
+        else:
+            b.add(x)
     return (a, b)
 
 
@@ -201,8 +221,9 @@ def clean(node: AnyNode, isRoot: bool = True) -> AnyNode:
     def _clean(node: AnyNode, isRoot: bool) -> AnyNode:
         # remove empty children
         node.kids = [
-            kid for kid in node.kids if kid is not None and
-              (kid.data.nleafs is None or kid.data.nleafs > 0)
+            kid
+            for kid in node.kids
+            if kid is not None and (kid.data.nleafs is None or kid.data.nleafs > 0)
         ]
         # remove all single-child nodes
         while len(node.kids) == 1:
@@ -210,7 +231,11 @@ def clean(node: AnyNode, isRoot: bool = True) -> AnyNode:
                 node.kids[0].data.length += node.data.length
             node = node.kids[0]
             # remove empty children
-            node.kids = [kid for kid in node.kids if (kid.data.nleafs is None or kid.data.nleafs > 0)]
+            node.kids = [
+                kid
+                for kid in node.kids
+                if (kid.data.nleafs is None or kid.data.nleafs > 0)
+            ]
         # clean all children
         newkids = []
         for kid in node.kids:
@@ -224,7 +249,9 @@ def clean(node: AnyNode, isRoot: bool = True) -> AnyNode:
     return _clean(node, isRoot)
 
 
-def factorByLabel(node: AnyNode, fun: Callable[[Optional[str]], Optional[str]]) -> AnyNode:
+def factorByLabel(
+    node: AnyNode, fun: Callable[[Optional[str]], Optional[str]]
+) -> AnyNode:
     """
     Assign factors to nodes based on the node label string
 
@@ -245,13 +272,15 @@ def factorByField(node: AnyNode, field: int, sep: str = "|") -> AnyNode:
 
     def _fun(name: Optional[str]) -> Optional[str]:
         if name is None:
-            raise AttributeError("Cannot factor since a leaf has an undefined tip label")
+            return None
         else:
             try:
                 return name.split(sep)[field - 1]
             except IndexError:
                 # raised when there are too few fields
-                raise IndexError(f"Cannot access the {field}th field in tip label {name}")
+                raise IndexError(
+                    f"Cannot access the {field}th field in tip label {name}"
+                )
 
     return factorByLabel(node, _fun)
 
@@ -294,7 +323,7 @@ def factorByTable(node: AnyNode, table: Dict[str, str], default=None):
     return factorByLabel(node, _fun)
 
 
-def isMonophyletic(node: Node[F, LC, Counter, BL]) -> bool:
+def isMonophyletic(node: Node[F, LC, Counter[str], BL]) -> bool:
     """
     Check is a branch is monophyletic relative to the defined factors. Requires
     that `setFactorCounts` has been called on the tree.
@@ -302,7 +331,7 @@ def isMonophyletic(node: Node[F, LC, Counter, BL]) -> bool:
     return len(node.data.factorCount) <= 1
 
 
-def getFactor(node: Node[Optional[str], LC, Counter, BL]) -> Optional[str]:
+def getFactor(node: Node[F, LC, Counter[str], BL]) -> Optional[str]:
     """
     Return the first factor that a tree has (in no special order) or if there
     is no factor, than return None. This function may only be used for
@@ -315,7 +344,9 @@ def getFactor(node: Node[Optional[str], LC, Counter, BL]) -> Optional[str]:
         return None
 
 
-def imputeMonophyleticFactors(node: Node[Optional[str], LC, Counter, BL]) -> Node[Optional[str], LC, Counter, BL]:
+def imputeMonophyleticFactors(
+    node: Node[Optional[str], LC, Counter[str], BL]
+) -> Node[Optional[str], LC, Counter[str], BL]:
     """
     For all monophyletic branches, assign all unlabeled tips to the unique factor.
 
@@ -326,6 +357,7 @@ def imputeMonophyleticFactors(node: Node[Optional[str], LC, Counter, BL]) -> Nod
     on this node, then the counts then will include both the labeled and
     imputed data. So be careful.
     """
+
     def setFactors(node, factor):
         def _fun(b):
             b.factor = factor
@@ -343,8 +375,9 @@ def imputeMonophyleticFactors(node: Node[Optional[str], LC, Counter, BL]) -> Nod
     return node
 
 
-def imputePatristicFactors(node: Node[Optional[str], LC, FC, BL]) -> Node[Optional[str], LC, FC, BL]:
-
+def imputePatristicFactors(
+    node: Node[Optional[str], LC, FC, BL]
+) -> Node[Optional[str], LC, FC, BL]:
     def kid_fun_(d, ds):
         d.factorDist = dict()
         if d.isLeaf and d.factor:
@@ -394,7 +427,13 @@ def getLeftmost(node: AnyNode) -> AnyNode:
         return node
 
 
-def sampleN(node: Node[F, int, FC, BL], n: int) -> Node[F, int, FC, BL]:
+def sampleN(node: Node[F, LC, FC, BL], n: int) -> Node[F, int, FC, BL]:
+    """
+    The unassuming counterpart of _sampleN
+    """
+    return(_sampleN(setNLeafs(node), n))
+
+def _sampleN(node: Node[F, int, FC, BL], n: int) -> Node[F, int, FC, BL]:
     if n == 0:
         raise ValueError("n in sampleN much be greater than 0")
     elif n > node.data.nleafs:
@@ -406,7 +445,7 @@ def sampleN(node: Node[F, int, FC, BL], n: int) -> Node[F, int, FC, BL]:
     for k, m in zip(node.kids, selection):
         if m > 0:
             k.data.nleafs = m
-            k = sampleN(k, m)
+            k = _sampleN(k, m)
             kids_.append(k)
 
     node.kids = kids_
@@ -435,7 +474,7 @@ def sampleRandom(
 
     keepers: List[str]
     samplers: List[str]
-    (keepers, samplers) = partition(treefold(node, _collect, []), keep_fun)
+    (keepers, samplers) = partition_list(treefold(node, _collect, []), keep_fun)
 
     # use the given function count_fun to decide how many tips to sample, but
     # never sample more than there are
@@ -503,7 +542,9 @@ def distribute(count: int, groups: int, sizes: Optional[List[int]] = None) -> Li
     return selection
 
 
-def sampleBalanced(node: AnyNode, keep: List[str] = [], maxTips: int = 5) -> Node[F, int, Counter, BL]:
+def sampleBalanced(
+    node: AnyNode, keep: List[str] = [], maxTips: int = 5
+) -> Node[F, int, Counter[str], BL]:
     # recursive sampler
     def _sampleBalanced(node):
         newkids = []
@@ -515,7 +556,7 @@ def sampleBalanced(node: AnyNode, keep: List[str] = [], maxTips: int = 5) -> Nod
                 if list(kid.data.factorCount.keys())[0] in keep:
                     newkids.append(kid)
                 else:
-                    newkids.append(sampleN(kid, maxTips))
+                    newkids.append(_sampleN(kid, maxTips))
             else:
                 newkids.append(_sampleBalanced(kid))
         node.kids = newkids
@@ -526,21 +567,23 @@ def sampleBalanced(node: AnyNode, keep: List[str] = [], maxTips: int = 5) -> Nod
     return clean(_sampleBalanced(node))
 
 
-def sampleParaphyletic(node: AnyNode, **kwargs: Any) -> Node[F, LC, Counter, BL]:
+def sampleParaphyletic(node: AnyNode, **kwargs: Any) -> Node[F, LC, Counter[str], BL]:
 
     # Choose a strategy for sampling
     _sampler = _makeParaphyleticSampler(**kwargs)
 
     # Pull factor sets up into each node, this is a performance optimization.
     # Without it I would have to traverse the entire subtree beneath each node.
-    node = setFactorCounts(node)
+    node_ = setFactorCounts(node)
 
     # Find a set of strains to keep in the final tree
     selected = _selectParaphyletic(
-        node=node, sampler=_sampler, selected=set(), paraGroup=set(), paraFactor=None
+        node=node_, sampler=_sampler, selected=set(), paraGroup=set(), paraFactor=None
     )
 
-    def _cull(node):
+    def _cull(
+        node: Node[F, LC, Counter[str], BL]
+    ) -> List[Node[F, LC, Counter[str], BL]]:
         chosenOnes = [
             kid
             for kid in node.kids
@@ -549,7 +592,7 @@ def sampleParaphyletic(node: AnyNode, **kwargs: Any) -> Node[F, LC, Counter, BL]
         return chosenOnes
 
     # Remove all tips but those selected above
-    subsampled_tree = clean(treecut(node, _cull))
+    subsampled_tree = clean(treecut(node_, _cull))
 
     return subsampled_tree
 
@@ -569,7 +612,7 @@ def _makeParaphyleticSampler(
     minTips: int = 1,
     seed: Optional[int] = None,
     keep_ends: bool = False,
-) -> Callable[[List[str], str, List[Optional[str]]], List[str]]:
+) -> Callable[[Set[str], Optional[str], List[Optional[str]]], Set[str]]:
 
     rng = random.Random(seed)
 
@@ -581,7 +624,7 @@ def _makeParaphyleticSampler(
 
         _proportion = cast(float, proportion)
 
-        def _sample(labels: List[str]) -> int:
+        def _sample(labels: Sized) -> int:
             return min(len(labels), max(minTips, math.ceil(_proportion * len(labels))))
 
     # scale randomly selects s=n^(1/scale) elements from the sampling group
@@ -589,7 +632,7 @@ def _makeParaphyleticSampler(
 
         _scale = cast(float, scale)
 
-        def _sample(labels: List[str]) -> int:
+        def _sample(labels: Sized) -> int:
             return min(
                 len(labels), max(minTips, math.ceil(len(labels) ** (1 / _scale)))
             )
@@ -599,7 +642,7 @@ def _makeParaphyleticSampler(
 
         _number = cast(int, number)
 
-        def _sample(labels: List[str]) -> int:
+        def _sample(labels: Sized) -> int:
             return min(len(labels), _number)
 
     # if no choose is selected, then we're f*cked
@@ -610,48 +653,50 @@ def _makeParaphyleticSampler(
     def keep_search(x: str) -> bool:
         return bool(re.search(keep_regex, x))
 
-    def unnone(xs: List[Optional[A]]) -> List[A]:
-        return [x for x in xs if x is not None]
-
     #  Internal sampling function used by sampleParaphyletic
     def _sampleLabels(
-        labels: List[str], factor: str, ends: List[Optional[str]]
-    ) -> List[str]:
-        if factor in keep:
+        labels: Set[str], factor: Optional[str], ends: List[Optional[str]]
+    ) -> Set[str]:
+        if factor is not None and factor in keep:
             return labels
         else:
-            keepers: List[str] = []
-            samplers: List[str] = labels
+            keepers: Set[str] = set()
+            samplers: Set[str] = labels
             if keep_regex:
                 # The partition function ensures keepers and samplers are non-overlapping
-                (keepers, samplers) = partition(samplers, keep_search)
+                (keepers, samplers) = partition_set(samplers, keep_search)
 
             if keep_ends:
-                keepers = keepers + unnone(ends)
-                samplers = [s for s in samplers if s not in ends]
-
-            samplers = list(set(samplers))
+                keepers.update(unnone(ends))
+                samplers = {s for s in samplers if s not in ends}
 
             N = _sample(samplers)
             try:
                 # sort for reproducibility
-                sample = rng.sample(sorted(samplers), N)
+                sample = set(rng.sample(sorted(list(samplers)), N))
             except ValueError:
                 raise ValueError(
                     f"Bad sample size ({N}) for population of size ({len(labels)})"
                 )
-            return sample + keepers
+            return sample | keepers
 
     return _sampleLabels
 
 
 # recursive function for creating sampling groups
-def _selectParaphyletic(node, sampler, selected=set(), paraGroup=set(), paraFactor=None):
+def _selectParaphyletic(
+    node: Node[F, LC, Counter[str], BL],
+    sampler: Callable[[Set[str], Optional[str], List[Optional[str]]], Set[str]],
+    selected: Set[str] = set(),
+    paraGroup: Set[str] = set(),
+    paraFactor: Optional[str] = None,
+) -> Set[str]:
+
     # a subtree that is not of the same factor as the parent
     rebelChild = None
     potentialMembers = []
     canMerge = True
-    ends = [None, None]
+    ends: List[Optional[str]] = [None, None]
     oldFactor = paraFactor
     for kid in node.kids:
         if not canMerge:
@@ -712,8 +757,8 @@ def _selectParaphyletic(node, sampler, selected=set(), paraGroup=set(), paraFact
             else:
                 selected.update(_selectParaphyletic(k, sampler, selected))
         selected.update(sampler(paraGroup, paraFactor, ends))
-        for (k, v) in groups.items():
-            selected.update(sampler(v, k, ends))
+        for (groupFactor, groupLabels) in groups.items():
+            selected.update(sampler(groupLabels, groupFactor, ends))
 
     return selected
 

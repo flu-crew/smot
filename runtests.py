@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import smot.parser as sp
-from smot.classes import Node
+from smot.classes import make_Node
 import smot.algorithm as alg
 import parsec as psc
 import unittest
@@ -86,15 +86,15 @@ class TestParsers(unittest.TestCase):
     def test_leaf(self):
         self.assertEqual(
             sp.p_leaf.parse("A[foo=boo]:0.42"),
-            sp.Node(label="A", form={"foo": "boo"}, length=0.42),
+            make_Node(label="A", form={"foo": "boo"}, length=0.42),
         )
 
     def test_node(self):
         self.assertEqual(
             sp.p_node.parse("(A[foo=boo,bar=baz]:0.42)Root"),
-            sp.Node(
+            make_Node(
                 kids=[
-                    sp.Node(label="A", form={"foo": "boo", "bar": "baz"}, length=0.42)
+                    make_Node(label="A", form={"foo": "boo", "bar": "baz"}, length=0.42)
                 ],
                 label="Root",
             ),
@@ -103,24 +103,24 @@ class TestParsers(unittest.TestCase):
     def test_newick(self):
         self.assertEqual(
             sp.p_tree.parse("(A[foo=boo]:0.42)Root;").tree,
-            sp.Node(
-                kids=[sp.Node(label="A", form={"foo": "boo"}, length=0.42)],
+            make_Node(
+                kids=[make_Node(label="A", form={"foo": "boo"}, length=0.42)],
                 label="Root",
             ),
         )
         self.assertEqual(
             sp.p_tree.parse("(B,(A,C,E),D);").tree,
-            sp.Node(
+            make_Node(
                 kids=[
-                    sp.Node(label="B"),
-                    sp.Node(
+                    make_Node(label="B"),
+                    make_Node(
                         kids=[
-                            sp.Node(label="A"),
-                            sp.Node(label="C"),
-                            sp.Node(label="E"),
+                            make_Node(label="A"),
+                            make_Node(label="C"),
+                            make_Node(label="E"),
                         ]
                     ),
-                    sp.Node(label="D"),
+                    make_Node(label="D"),
                 ]
             ),
         )
@@ -336,17 +336,17 @@ class TestALgorithms(unittest.TestCase):
 
         self.assertEqual(
             alg.treemap(sp.p_tree.parse("(B,(A,C,E),D);").tree, _lower),
-            sp.Node(
+            make_Node(
                 kids=[
-                    sp.Node(label="b"),
-                    sp.Node(
+                    make_Node(label="b"),
+                    make_Node(
                         kids=[
-                            sp.Node(label="a"),
-                            sp.Node(label="c"),
-                            sp.Node(label="e"),
+                            make_Node(label="a"),
+                            make_Node(label="c"),
+                            make_Node(label="e"),
                         ]
                     ),
-                    sp.Node(label="d"),
+                    make_Node(label="d"),
                 ]
             ),
         )
@@ -381,24 +381,24 @@ class TestALgorithms(unittest.TestCase):
 
         self.assertEqual(
             alg.factorByLabel(sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, _fun),
-            sp.Node(
+            make_Node(
                 kids=[
-                    sp.Node(label="B|a", factor="a"),
-                    sp.Node(
+                    make_Node(label="B|a", factor="a"),
+                    make_Node(
                         kids=[
-                            sp.Node(label="A|b", factor="b"),
-                            sp.Node(label="C|b", factor="b"),
-                            sp.Node(label="E|b", factor="b"),
+                            make_Node(label="A|b", factor="b"),
+                            make_Node(label="C|b", factor="b"),
+                            make_Node(label="E|b", factor="b"),
                         ]
                     ),
-                    sp.Node(label="D|c", factor="c"),
+                    make_Node(label="D|c", factor="c"),
                 ]
             ),
         )
 
     def test_getLeftmost(self):
         self.assertEqual(
-            alg.getLeftmost(sp.p_tree.parse("(B,(A,C,E),D);").tree), Node(label="B")
+            alg.getLeftmost(sp.p_tree.parse("(B,(A,C,E),D);").tree), make_Node(label="B")
         )
 
     def test_sampleBalanced(self):
@@ -410,11 +410,11 @@ class TestALgorithms(unittest.TestCase):
                 keep=[],
                 maxTips=1,
             ),
-            sp.Node(
+            make_Node(
                 kids=[
-                    sp.Node(label="B|a", factor="a"),
-                    sp.Node(label="A|b", factor="b"),
-                    sp.Node(label="D|c", factor="c"),
+                    make_Node(label="B|a", factor="a"),
+                    make_Node(label="A|b", factor="b"),
+                    make_Node(label="D|c", factor="c"),
                 ]
             ),
         )
@@ -427,16 +427,16 @@ class TestALgorithms(unittest.TestCase):
                 keep=[],
                 maxTips=2,
             ),
-            sp.Node(
+            make_Node(
                 kids=[
-                    sp.Node(label="B|a", factor="a"),
-                    sp.Node(
+                    make_Node(label="B|a", factor="a"),
+                    make_Node(
                         kids=[
-                            sp.Node(label="A|b", factor="b"),
-                            sp.Node(label="C|b", factor="b"),
+                            make_Node(label="A|b", factor="b"),
+                            make_Node(label="C|b", factor="b"),
                         ]
                     ),
-                    sp.Node(label="D|c", factor="c"),
+                    make_Node(label="D|c", factor="c"),
                 ]
             ),
         )
