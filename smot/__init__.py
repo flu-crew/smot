@@ -1,14 +1,11 @@
 from smot.algorithm import (
-    # recursion algorithms
     treemap,
     treefold,
     treecut,
     treepull,
     treepush,
-    #
     tips,
     clean,
-    #
     factorByField,
     factorByCapture,
     factorByTable,
@@ -32,7 +29,40 @@ from smot.parser import read_file, read_text
 from smot.format import newick, nexus
 
 from smot.classes import (
-    Tree,
-    NodeData,
-    Node,
+    makeTree,
+    makeNodeData,
+    makeNode,
 )
+
+__all__ = [
+    "treemap",
+    "treefold",
+    "treecut",
+    "treepull",
+    "treepush",
+    "tips",
+    "clean",
+    "factorByField",
+    "factorByCapture",
+    "factorByTable",
+    "isMonophyletic",
+    "imputeMonophyleticFactors",
+    "imputePatristicFactors",
+    "getLeftmost",
+    "sampleN",
+    "sampleRandom",
+    "sampleMonophyletic",
+    "sampleParaphyletic",
+    "sampleBalanced",
+    "colorTree",
+    "colorMono",
+    "colorPara",
+    "filterMono",
+    "read_file",
+    "read_text",
+    "newick",
+    "nexus",
+    "makeTree",
+    "makeNodeData",
+    "makeNode",
+]
