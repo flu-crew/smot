@@ -3,10 +3,20 @@ import click
 import os
 import signal
 import sys
-from smot.classes import (Node, NodeData, Tree, AnyNode, AnyNodeData, LC, FC, BL)
+from smot.classes import (
+    Node,
+    NodeData,
+    Tree,
+    AnyNode,
+    AnyNodeData,
+    LC,
+    BL,
+    make_Node,
+    make_Tree,
+)
 from smot.util import die
 import smot.format as sf
-from typing import (List, Optional, Union, TextIO, Callable, Tuple, Dict, cast)
+from typing import List, Optional, TextIO, Callable, Tuple, Dict, Counter
 
 INT_SENTINEL = 9999
 
@@ -106,7 +116,7 @@ def factorTree(
     default: Optional[str] = None,
     impute: bool = False,
     patristic: bool = False,
-):
+) -> Node[Optional[str], LC, Counter[str], BL]:
     import smot.algorithm as alg
     import re
 
@@ -118,7 +128,7 @@ def factorTree(
             )
         if default:
             die(
-                f"I'm sorry, I can't let you do that. Using --default with --factor-by-field is unsafe."
+                "I'm sorry, I can't let you do that. Using --default with --factor-by-field is unsafe."
             )
         factoredNode = alg.factorByField(node, field_index)
     elif factor_by_capture is not None:
@@ -137,7 +147,7 @@ def factorTree(
             factoredNode = alg.factorByTable(node, table=table, default=default)
     else:
         factoredNode = node
-        
+
     factoredCountedNode = alg.setFactorCounts(factoredNode)
 
     if patristic:
@@ -351,7 +361,7 @@ def mono(
     factor_by_field: Optional[int],
     factor_by_table: Optional[str],
     keep: List[str],
-    keep_regex: List[str],
+    keep_regex: str,
     default: Optional[str],
     min_tips: int,
     proportion: Optional[float],
@@ -416,7 +426,7 @@ def para(
     factor_by_field: Optional[int],
     factor_by_table: Optional[str],
     keep: List[str],
-    keep_regex: List[str],
+    keep_regex: str,
     default: Optional[str],
     min_tips: int,
     proportion: Optional[float],
@@ -710,7 +720,7 @@ def filter_cmd(
     # boilerplate
     newick: bool,
     tree: TextIO,
-):
+) -> None:
     """
     An advanced tool for performaing actions (remove, color, sample, or
     replace) on monophyletic groups that meet specified conditions (all-match,
@@ -759,24 +769,45 @@ def filter_cmd(
 
     action: Callable[[AnyNode], Optional[AnyNode]]
     if remove:
-        action = lambda x: None
-    elif color:
+
+        def action(x):
+            return None
+
+    elif color is not None:
         checkColor(color)
-        action = lambda x: alg.colorTree(x, color)
-    elif sample:
-        action = lambda x: alg.sampleMonophyletic(
-            x, proportion=sample, scale=None, minTips=3, keep_regex="", seed=seed
-        )
-    elif replace:
+
+        def action(x):
+            return alg.colorTree(x, color)
+
+    elif sample is not None:
+
+        def action(x):
+            return alg.sampleMonophyletic(
+                x, proportion=sample, scale=None, minTips=3, keep_regex="", seed=seed
+            )
+
+    elif replace is not None:
 
         def _fun(d: AnyNodeData) -> AnyNodeData:
             d.label = re.sub(replace[0], replace[1], d.label)
             return d
 
-        action = lambda x: alg.treemap(x, _fun)
+        def action(x):
+            return alg.treemap(x, _fun)
 
-    tree_obj.tree = alg.filterMono(tree_obj.tree, condition=condition, action=action)
-    tree_obj.tree = alg.clean(tree_obj.tree)
+    else:
+        # If no action is set, do nothing
+        def action(x):
+            return x
+
+    filteredNode = alg.filterMono(tree_obj.tree, condition=condition, action=action)
+
+    if filteredNode is None:
+        # make an empty tree
+        tree_obj.tree = make_Tree(make_Node())
+    else:
+        # otherwise clean the existing node
+        tree_obj.tree = alg.clean(filteredNode)
 
     if newick:
         print(sf.newick(tree_obj))
@@ -1001,7 +1032,7 @@ def make_node2tip(
 ) -> Callable[[AnyNodeData, AnyNodeData], AnyNodeData]:
     def node2tip(x, kid):
         if "!color" in x.form:
-            if not "!color" in kid.form:
+            if "!color" not in kid.form:
                 kid.form["!color"] = x.form["!color"]
             if kid.isLeaf:
                 colmap[kid.label] = x.form["!color"]

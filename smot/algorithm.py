@@ -1,5 +1,4 @@
 from smot.classes import Node, NodeData, F, LC, FC, BL, AnyNode, AnyNodeData, make_Node
-from smot.util import die
 from collections import Counter, defaultdict
 import re
 import math
@@ -16,7 +15,6 @@ from typing import (
     Sized,
     Tuple,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -466,7 +464,7 @@ def _sampleN(node: Node[F, int, FC, BL], n: int) -> Node[F, int, FC, BL]:
 def sampleRandom(
     node: AnyNode,
     rng: random.Random,
-    count_fun: Callable[[Iterable[str]], int],
+    count_fun: Callable[[Sized], int],
     keep_fun: Callable[[str], bool],
 ) -> AnyNode:
     """
@@ -573,7 +571,9 @@ def sampleBalanced(
     return clean(_sampleBalanced(node))
 
 
-def sampleParaphyletic(node: AnyNode, **kwargs: Any) -> Node[F, LC, Counter[str], BL]:
+def sampleParaphyletic(
+    node: AnyNode, **kwargs: Any
+) -> Node[Optional[str], int, Counter[str], BL]:
 
     # Choose a strategy for sampling
     _sampler = _makeParaphyleticSampler(**kwargs)
@@ -621,8 +621,6 @@ def _makeParaphyleticSampler(
 ) -> Callable[[Set[str], Optional[str], List[Optional[str]]], Set[str]]:
 
     rng = random.Random(seed)
-
-    import sys
 
     # Choose a sampling algorithm
     # proportional selects samples from the sampling group with 0-1 probability
@@ -770,51 +768,69 @@ def _selectParaphyletic(
 
 
 def sampleMonophyletic(
-    node,
-    proportion=None,
-    scale=None,
-    number=None,
-    keep=[],
-    keep_regex="",
-    minTips=1,
-    seed=None,
-):
+    node: AnyNode,
+    proportion: Optional[float] = None,
+    scale: Optional[float] = None,
+    number: Optional[int] = None,
+    keep: List[str] = [],
+    keep_regex: str = "",
+    minTips: int = 1,
+    seed: Optional[int] = None,
+) -> Node[Optional[str], int, Counter[str], BL]:
+
+    # Pull factor sets up into each node, this is a performance optimization.
+    # Without it I would have to traverse the entire subtree beneath each node.
+    factoredNode = setFactorCounts(node)
+
     rng = random.Random(seed)
 
-    if proportion:
-        count_fun = lambda xs: max(minTips, math.floor(len(xs) * proportion))
-    elif scale:
-        count_fun = lambda xs: max(minTips, math.floor(len(xs) ** (1 / scale)))
+    count_fun: Callable[[Sized], int]
+    if proportion is not None:
+
+        def count_fun(xs):
+            return max(minTips, math.floor(len(xs) * proportion))
+
+    elif scale is not None:
+
+        def count_fun(xs):
+            return max(minTips, math.floor(len(xs) ** (1.0 / scale)))
+
+    elif number is not None:
+
+        def count_fun(xs):
+            return min(len(xs), number)
+
     else:
-        count_fun = lambda xs: min(len(xs), number)
+        # if no sampling metric is given, keep everything
+        def count_fun(xs):
+            return len(xs)
 
     if keep_regex:
-        keep_fun = lambda label: re.search(keep_regex, label)
+        keep_fun = lambda label: bool(re.search(keep_regex, label))
     else:
         keep_fun = lambda label: False
 
-    def _sample(node):
-        return sampleRandom(node=node, rng=rng, count_fun=count_fun, keep_fun=keep_fun)
+    def _sample(node_):
+        return sampleRandom(node=node_, rng=rng, count_fun=count_fun, keep_fun=keep_fun)
 
     # recursive sampler
-    def _sampleMonophyletic(node):
-        nfactors = len(node.data.factorCount)
+    def _sampleMonophyletic(node_):
+        nfactors = len(node_.data.factorCount)
         if nfactors == 0:
-            return _sample(node)
+            return _sample(node_)
         elif nfactors == 1:
-            if list(node.data.factorCount.keys())[0] in keep:
-                return node
+            if list(node_.data.factorCount.keys())[0] in keep:
+                return node_
             else:
-                node = _sample(node)
+                node_ = _sample(node_)
         else:
-            node.kids = [_sampleMonophyletic(kid) for kid in node.kids]
-        return node
+            node_.kids = [_sampleMonophyletic(kid) for kid in node_.kids]
+        return node_
 
-    node = setFactorCounts(node)
-    return clean(_sampleMonophyletic(node))
+    return clean(_sampleMonophyletic(factoredNode))
 
 
-def colorTree(node, color):
+def colorTree(node: AnyNode, color: str) -> AnyNode:
     def fun_(d):
         d.form["!color"] = color
         return d
@@ -822,7 +838,9 @@ def colorTree(node, color):
     return treemap(node, fun_)
 
 
-def colorMono(node, colormap):
+def colorMono(
+    node: Node[F, LC, Counter[str], BL], colormap: Dict[str, str]
+) -> Node[F, LC, Counter[str], BL]:
     if len(node.data.factorCount) == 1:
         label = list(node.data.factorCount.keys())[0]
         if label in colormap:
@@ -832,26 +850,41 @@ def colorMono(node, colormap):
     return node
 
 
-def filterMono(node, condition, action):
+def filterMono(
+    node: Node[F, LC, Counter[str], BL],
+    condition: Callable[[Node[F, LC, Counter[str], BL]], bool],
+    action: Callable[
+        [Node[F, LC, Counter[str], BL]], Optional[Node[F, LC, Counter[str], BL]]
+    ],
+) -> Optional[Node[F, LC, Counter[str], BL]]:
+    maybe_node: Optional[Node[F, LC, Counter[str], BL]]
     if len(node.data.factorCount) == 1:
         if condition(node):
-            node = action(node)
+            maybe_node = action(node)
+        else:
+            maybe_node = node
     else:
-        node.kids = [filterMono(kid, condition, action) for kid in node.kids]
-    return node
+        node.kids = unnone([filterMono(kid, condition, action) for kid in node.kids])
+        maybe_node = node
+    return maybe_node
 
 
-def intersectionOfSets(xss):
-    try:
+def intersectionOfSets(xss: List[Iterable[A]]) -> Set[A]:
+    if len(xss) == 0:
+        return set()
+    elif len(xss) == 1:
+        return set(xss[0])
+    else:
         x = set(xss[0])
         for y in xss[1:]:
             x = x.intersection(set(y))
-    except:
-        x = set()
-    return x
+        return x
 
 
-def colorPara(node, colormap):
+def colorPara(
+    node: Node[F, LC, Counter[str], BL], colormap: Dict[str, str]
+) -> Node[F, LC, Counter[str], BL]:
+
     if len(node.data.factorCount) == 1:
         label = list(node.data.factorCount.keys())[0]
         if label in colormap:
