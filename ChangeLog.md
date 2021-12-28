@@ -1,3 +1,9 @@
+0.17.1 [2021-12-28]
+===================
+
+ * Add MyPy type annotations
+ * Migrate from Travis to GitHub Actions CI
+
 0.17.0 [2021-11-15]
 ===================
 
