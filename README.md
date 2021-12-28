@@ -1,3 +1,4 @@
+![build status](https://github.com/flu-crew/smot/actions/workflows/python-app.yml/badge.svg)
 ![PyPI](https://img.shields.io/pypi/v/smot.svg)
 
 # smot - Simple Manipulation Of Trees
