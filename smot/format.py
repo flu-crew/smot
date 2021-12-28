@@ -1,4 +1,4 @@
-from smot.classes import Node, Tree, make_Tree, AnyNode, AnyNodeData
+from smot.classes import Node, Tree, makeTree, AnyNode, AnyNodeData
 import smot.algorithm as alg
 import re
 from typing import (
@@ -61,7 +61,7 @@ def _newick(node: AnyNode) -> str:
 def nexus(treeOrNode: Union[AnyNode, Tree]) -> str:
     # allow input to be a Node object
     if isinstance(treeOrNode, Node):
-        tree = make_Tree(tree=treeOrNode)
+        tree = makeTree(tree=treeOrNode)
     else:
         tree = treeOrNode
 

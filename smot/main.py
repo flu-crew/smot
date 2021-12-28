@@ -11,8 +11,8 @@ from smot.classes import (
     AnyNodeData,
     LC,
     BL,
-    make_Node,
-    make_Tree,
+    makeNode,
+    makeTree,
 )
 from smot.util import die
 import smot.format as sf
@@ -804,7 +804,7 @@ def filter_cmd(
 
     if filteredNode is None:
         # make an empty tree
-        tree_obj.tree = make_Tree(make_Node())
+        tree_obj.tree = makeTree(makeNode())
     else:
         # otherwise clean the existing node
         tree_obj.tree = alg.clean(filteredNode)

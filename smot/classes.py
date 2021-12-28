@@ -58,7 +58,7 @@ AnyNode = Node[F, LC, FC, BL]
 BaseNode = Node[Optional[str], None, None, Optional[float]]
 
 
-def make_Tree(
+def makeTree(
     tree: AnyNode,
     colmap: Dict[str, str] = dict(),
     meta: Dict[str, str] = dict(),
@@ -68,7 +68,7 @@ def make_Tree(
     return x
 
 
-def make_Node(
+def makeNode(
     kids: List[BaseNode] = [],
     label: Optional[str] = None,
     form: Optional[Dict[str, str]] = None,
@@ -77,13 +77,13 @@ def make_Node(
 ) -> BaseNode:
     n: BaseNode = Node()
     n.kids = kids
-    n.data = make_NodeData(
+    n.data = makeNodeData(
         label=label, form=form, length=length, isLeaf=not bool(kids), factor=factor
     )
     return n
 
 
-def make_NodeData(
+def makeNodeData(
     label: Optional[str],
     form: Optional[Dict[str, str]],
     length: Optional[float],

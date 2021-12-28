@@ -25,7 +25,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 mypy
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install .
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -37,5 +36,8 @@ jobs:
       run: mypy smot/*py
     - name: Unit tests
       run: ./runtests.py
+      # This is the most computationally expensive step, so put it last
     - name: Golden tests
-      run: cd test-data && make
+      run: |
+        pip install .
+        cd test-data && make
