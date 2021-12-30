@@ -1156,9 +1156,3 @@ cli.add_command(color)
 def main():
     sys.setrecursionlimit(1000000)
     cli()
-
-
-if __name__ == "__main__":
-    if os.name == "posix":
-        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
-    main()
