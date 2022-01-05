@@ -33,7 +33,7 @@ jobs:
         # flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         flake8 . --count --exit-zero --max-line-length=127 --statistics --ignore=W503,E501,W605,E731,F401
     - name: Typechecking
-      run: mypy smot/*py
+      run: if [[ ${{ matrix.python-version }} -eq "3.10" ]]; then mypy smot/*py; fi
     - name: Unit tests
       run: ./runtests.py
       # This is the most computationally expensive step, so put it last
