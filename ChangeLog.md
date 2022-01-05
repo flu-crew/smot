@@ -1,3 +1,9 @@
+0.17.2 [2022-01-05]
+===================
+
+ * Fix bugs in older Python versions caused by MyPy
+ * Drop support for Python 3.6 and prior versions - this is unfortunate, is MyPy worth it?
+
 0.17.1 [2021-12-28]
 ===================
 
