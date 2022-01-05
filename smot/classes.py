@@ -5,7 +5,7 @@ from collections import Counter
 
 F = TypeVar("F", None, Optional[str], str)
 LC = TypeVar("LC", None, int)
-FC = TypeVar("FC", None, Counter[str])
+FC = TypeVar("FC", None, Counter)
 BL = TypeVar("BL", None, Optional[float], float)
 
 

@@ -146,13 +146,13 @@ def setNLeafs(node: Node[F, LC, FC, BL]) -> Node[F, int, FC, BL]:
     return node_
 
 
-def setFactorCounts(node: Node[F, LC, FC, BL]) -> Node[F, LC, Counter[str], BL]:
+def setFactorCounts(node: Node[F, LC, FC, BL]) -> Node[F, LC, Counter, BL]:
     """
     Count the factors descending from each node.
 
     This is done solely to improve performance in some of the algorithms.
     """
-    n: Counter[str]
+    n: Counter
     if node.data.isLeaf:
         if node.data.factor:
             n = Counter([node.data.factor])
@@ -165,9 +165,9 @@ def setFactorCounts(node: Node[F, LC, FC, BL]) -> Node[F, LC, Counter[str], BL]:
         for kid in kids_:
             n += kid.data.factorCount
 
-    node_ = cast(Node[F, LC, Counter[str], BL], node)
+    node_ = cast(Node[F, LC, Counter, BL], node)
     node_.kids = kids_
-    node_.data = cast(NodeData[F, LC, Counter[str], BL], node.data)
+    node_.data = cast(NodeData[F, LC, Counter, BL], node.data)
     node_.data.factorCount = n  # type: ignore
 
     return node_
@@ -328,7 +328,7 @@ def factorByTable(node: AnyNode, table: Dict[str, str], default=None):
     return factorByLabel(node, _fun)
 
 
-def isMonophyletic(node: Node[F, LC, Counter[str], BL]) -> bool:
+def isMonophyletic(node: Node[F, LC, Counter, BL]) -> bool:
     """
     Check is a branch is monophyletic relative to the defined factors. Requires
     that `setFactorCounts` has been called on the tree.
@@ -336,7 +336,7 @@ def isMonophyletic(node: Node[F, LC, Counter[str], BL]) -> bool:
     return len(node.data.factorCount) <= 1
 
 
-def getFactor(node: Node[F, LC, Counter[str], BL]) -> Optional[str]:
+def getFactor(node: Node[F, LC, Counter, BL]) -> Optional[str]:
     """
     Return the first factor that a tree has (in no special order) or if there
     is no factor, than return None. This function may only be used for
@@ -350,8 +350,8 @@ def getFactor(node: Node[F, LC, Counter[str], BL]) -> Optional[str]:
 
 
 def imputeMonophyleticFactors(
-    node: Node[Optional[str], LC, Counter[str], BL]
-) -> Node[Optional[str], LC, Counter[str], BL]:
+    node: Node[Optional[str], LC, Counter, BL]
+) -> Node[Optional[str], LC, Counter, BL]:
     """
     For all monophyletic branches, assign all unlabeled tips to the unique factor.
 
@@ -550,7 +550,7 @@ def distribute(count: int, groups: int, sizes: Optional[List[int]] = None) -> Li
 
 def sampleBalanced(
     node: AnyNode, keep: List[str] = [], maxTips: int = 5
-) -> Node[F, int, Counter[str], BL]:
+) -> Node[F, int, Counter, BL]:
     # recursive sampler
     def _sampleBalanced(node):
         newkids = []
@@ -575,7 +575,7 @@ def sampleBalanced(
 
 def sampleParaphyletic(
     node: AnyNode, **kwargs: Any
-) -> Node[Optional[str], int, Counter[str], BL]:
+) -> Node[Optional[str], int, Counter, BL]:
 
     # Choose a strategy for sampling
     _sampler = _makeParaphyleticSampler(**kwargs)
@@ -590,8 +590,8 @@ def sampleParaphyletic(
     )
 
     def _cull(
-        node: Node[F, LC, Counter[str], BL]
-    ) -> List[Node[F, LC, Counter[str], BL]]:
+        node: Node[F, LC, Counter, BL]
+    ) -> List[Node[F, LC, Counter, BL]]:
         chosenOnes = [
             kid
             for kid in node.kids
@@ -691,7 +691,7 @@ def _makeParaphyleticSampler(
 
 # recursive function for creating sampling groups
 def _selectParaphyletic(
-    node: Node[F, LC, Counter[str], BL],
+    node: Node[F, LC, Counter, BL],
     sampler: Callable[[Set[str], Optional[str], List[Optional[str]]], Set[str]],
     selected: Set[str] = set(),
     paraGroup: Set[str] = set(),
@@ -778,7 +778,7 @@ def sampleMonophyletic(
     keep_regex: str = "",
     minTips: int = 1,
     seed: Optional[int] = None,
-) -> Node[Optional[str], int, Counter[str], BL]:
+) -> Node[Optional[str], int, Counter, BL]:
 
     # Pull factor sets up into each node, this is a performance optimization.
     # Without it I would have to traverse the entire subtree beneath each node.
@@ -841,8 +841,8 @@ def colorTree(node: AnyNode, color: str) -> AnyNode:
 
 
 def colorMono(
-    node: Node[F, LC, Counter[str], BL], colormap: Dict[str, str]
-) -> Node[F, LC, Counter[str], BL]:
+    node: Node[F, LC, Counter, BL], colormap: Dict[str, str]
+) -> Node[F, LC, Counter, BL]:
     if len(node.data.factorCount) == 1:
         label = list(node.data.factorCount.keys())[0]
         if label in colormap:
@@ -853,13 +853,13 @@ def colorMono(
 
 
 def filterMono(
-    node: Node[F, LC, Counter[str], BL],
-    condition: Callable[[Node[F, LC, Counter[str], BL]], bool],
+    node: Node[F, LC, Counter, BL],
+    condition: Callable[[Node[F, LC, Counter, BL]], bool],
     action: Callable[
-        [Node[F, LC, Counter[str], BL]], Optional[Node[F, LC, Counter[str], BL]]
+        [Node[F, LC, Counter, BL]], Optional[Node[F, LC, Counter, BL]]
     ],
-) -> Optional[Node[F, LC, Counter[str], BL]]:
-    maybe_node: Optional[Node[F, LC, Counter[str], BL]]
+) -> Optional[Node[F, LC, Counter, BL]]:
+    maybe_node: Optional[Node[F, LC, Counter, BL]]
     if len(node.data.factorCount) == 1:
         if condition(node):
             maybe_node = action(node)
@@ -884,8 +884,8 @@ def intersectionOfSets(xss: List[Iterable[A]]) -> Set[A]:
 
 
 def colorPara(
-    node: Node[F, LC, Counter[str], BL], colormap: Dict[str, str]
-) -> Node[F, LC, Counter[str], BL]:
+    node: Node[F, LC, Counter, BL], colormap: Dict[str, str]
+) -> Node[F, LC, Counter, BL]:
 
     if len(node.data.factorCount) == 1:
         label = list(node.data.factorCount.keys())[0]

@@ -116,7 +116,7 @@ def factorTree(
     default: Optional[str] = None,
     impute: bool = False,
     patristic: bool = False,
-) -> Node[Optional[str], LC, Counter[str], BL]:
+) -> Node[Optional[str], LC, Counter, BL]:
     import smot.algorithm as alg
     import re
 
