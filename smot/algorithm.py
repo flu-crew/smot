@@ -1,8 +1,4 @@
-from smot.classes import Node, NodeData, F, LC, FC, BL, AnyNode, AnyNodeData, makeNode
-from collections import Counter, defaultdict
-import re
-import math
-import random
+from __future__ import annotations
 from typing import (
     Any,
     Callable,
@@ -17,6 +13,12 @@ from typing import (
     TypeVar,
     cast,
 )
+
+from smot.classes import Node, NodeData, F, LC, FC, BL, AnyNode, AnyNodeData, makeNode
+from collections import Counter, defaultdict
+import re
+import math
+import random
 
 # A type variable that can happily be anything
 A = TypeVar("A")

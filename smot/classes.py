@@ -1,4 +1,6 @@
+from __future__ import annotations
 from typing import Optional, Dict, List, Generic, TypeVar, Any
+
 from collections import Counter
 
 F = TypeVar("F", None, Optional[str], str)

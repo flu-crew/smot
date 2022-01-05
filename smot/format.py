@@ -1,12 +1,14 @@
-from smot.classes import Node, Tree, makeTree, AnyNode, AnyNodeData
-import smot.algorithm as alg
-import re
+from __future__ import annotations
 from typing import (
     List,
     Optional,
     Tuple,
     Union,
 )
+
+from smot.classes import Node, Tree, makeTree, AnyNode, AnyNodeData
+import smot.algorithm as alg
+import re
 
 
 def quote(x: str) -> str:

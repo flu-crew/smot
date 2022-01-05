@@ -1,9 +1,10 @@
 from __future__ import annotations
+from typing import TextIO, List, Dict, TypeVar, Tuple, Optional
+
 import parsec as p
 from parsec import Parser
 import re
 from smot.classes import makeNode, makeTree, Tree, AnyNode
-from typing import TextIO, List, Dict, TypeVar, Tuple, Optional
 
 A = TypeVar("A")
 B = TypeVar("B")

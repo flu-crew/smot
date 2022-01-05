@@ -1,5 +1,7 @@
-import sys
+from __future__ import annotations
 from typing import List, TypeVar, Optional
+
+import sys
 
 A = TypeVar("A")
 

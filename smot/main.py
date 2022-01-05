@@ -1,7 +1,8 @@
+from __future__ import annotations
+from typing import List, Optional, TextIO, Callable, Tuple, Dict, Counter
+
 from smot.version import __version__
 import click
-import os
-import signal
 import sys
 from smot.classes import (
     Node,
@@ -16,7 +17,6 @@ from smot.classes import (
 )
 from smot.util import die
 import smot.format as sf
-from typing import List, Optional, TextIO, Callable, Tuple, Dict, Counter
 
 INT_SENTINEL = 9999
 
