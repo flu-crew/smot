@@ -22,6 +22,7 @@ setup(
     ],
     entry_points={"console_scripts": ["smot=smot.main:main"]},
     installation_requires=["click", "parsec"],
+    package_data={"smot": ["py.typed"]},
     py_modules=["smot"],
     zip_safe=False,
 )
