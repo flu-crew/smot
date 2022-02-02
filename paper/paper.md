@@ -1,5 +1,10 @@
 ---
 title: '`smot`: a python package and CLI tool for contextual phylogenetic subsampling'
+tags:
+ - Python
+ - phylogenetics
+ - subsampling
+ - influenza
 authors:
   - name: Zebulun W. Arendsee
     orcid: 0000-0002-5833-798X
