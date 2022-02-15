@@ -5,6 +5,10 @@ from smot.version import __version__
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+# Read the requirements from the requirements.txt file
+with open("requirements.txt", "r") as fh:
+    requirements = [r.strip() for r in fh.readlines()]
+
 setup(
     name="smot",
     version=__version__,
@@ -21,7 +25,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     entry_points={"console_scripts": ["smot=smot.main:main"]},
-    installation_requires=["click", "parsec"],
+    install_requires=requirements,
     package_data={"smot": ["py.typed"]},
     py_modules=["smot"],
     zip_safe=False,
