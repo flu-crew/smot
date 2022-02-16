@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup # type: ignore
 
 # Initialize version variable for the linter, it will be assigned when version.py is evaluated
 __version__ : str
