@@ -1,6 +1,6 @@
 from setuptools import setup
 
-from smot.version import __version__
+exec(open('smot/version.py').read())
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
