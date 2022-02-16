@@ -1,6 +1,7 @@
 from setuptools import setup
 
-__version__ = "x.x.x" # This value will be reassigned when version.py is parsed
+# Initialize version variable for the linter, it will be assigned when version.py is evaluated
+__version__ : str
 exec(open('smot/version.py', "r").read())
 
 with open("README.md", "r") as fh:
