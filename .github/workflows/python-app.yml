@@ -31,13 +31,11 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         # flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         flake8 . --count --exit-zero --max-line-length=127 --statistics --ignore=W503,E501,W605,E731,F401,E722
+        # Installation must be done before unit testing or typechecking
+        pip install .
     - name: Unit tests
       run: ./runtests.py
     - name: Typechecking
-      run: |
-          # Typechecking must be run after installation, since the type annotations from dependencies are required
-          pip install .
-          mypy --python-version 3.10 smot/*py
-    # This is the most computationally expensive step, so put it last
+      run: mypy --python-version 3.10 smot/*py
     - name: Golden tests
       run: cd test-data && make
