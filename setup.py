@@ -1,6 +1,7 @@
 from setuptools import setup
 
-exec(open('smot/version.py').read())
+__version__ = "x.x.x" # This value will be reassigned when version.py is parsed
+exec(open('smot/version.py', "r").read())
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
