@@ -20,6 +20,9 @@ import smot.format as sf
 
 INT_SENTINEL = 9999
 
+def make_epilog(example):
+  return f"For subcommand usage, append `-h` (e.g., {example} -h)"
+
 
 class MaybeStringType(click.ParamType):
     name = "?str"
@@ -1079,13 +1082,13 @@ def push_color(tree: TextIO):
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
-@click.group(help="Simple Manipulation Of Trees", context_settings=CONTEXT_SETTINGS)
+@click.group(help="Simple Manipulation Of Trees", context_settings=CONTEXT_SETTINGS, epilog=make_epilog("smot sample"))
 @click.version_option(__version__, "-v", "--version", message=__version__)
 def cli():
     pass
 
 
-@click.group(context_settings=CONTEXT_SETTINGS)
+@click.group(context_settings=CONTEXT_SETTINGS, epilog=make_epilog("smot sample para"))
 def sample():
     """
     Subsample the tree using various methods. The details of the sampling
@@ -1107,7 +1110,7 @@ sample.add_command(mono)
 sample.add_command(para)
 
 
-@click.group()
+@click.group(epilog=make_epilog("smot color branch mono"))
 def branch():
     """
     Color the branches of a tree. You may provide a color map; if you do not,
@@ -1121,7 +1124,7 @@ branch.add_command(mono_color_cmd)
 branch.add_command(para_color_cmd)
 
 
-@click.group(context_settings=CONTEXT_SETTINGS)
+@click.group(context_settings=CONTEXT_SETTINGS, epilog=make_epilog("smot color branch"))
 def color():
     """
     Color the tips or branches. The coloring options are highly opinionated.
