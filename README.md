@@ -78,6 +78,14 @@ Options:
   -h, --help          Show this message and exit.
 ```
 
+Some subcommands have further subcommands and specific usage information can be
+found for each. For example:
+
+```
+$ smot sample -h
+$ smot sample para -h 
+```
+
 
 ## Examples
 
