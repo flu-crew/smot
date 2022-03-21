@@ -3,21 +3,19 @@
 
 # smot - Simple Manipulation Of Trees
 
-`smot` is a command line tool for manipulating, summarizing, and sampling from
-phylogenetic trees.
+`smot` is a command line tool for sampling and manipulating phylogenetic
+trees.
 
 
- | subcommand | description                                      |
- | ---------- | ------------------------------------------------ |
- | convert    | convert tree format                              |
- | tips       | list tip labels                                  |
- | plot       | plot the tree                                    |
- | sample     | sub-sample a tree                                |
- | factor     | integrate and/or infer classes for tips          |
- | tipsed     | regex-based search and replace across tip labels |
- | midpoint   | root tree by midpoint                            |
- | random     | make random tree given list of tip labels        |
- | clean      | remove singleton nodes and ladderize             |
+ | subcommand | description                                                       |
+ | ---------- | ----------------------------------------------------------------- |
+ | color      | Color the tips or branches.                                       |
+ | factor     | Impute, annotate with, and/or tabulate factors.                   |
+ | filter     | An advanced tool for performing actions (remove, color,...        |
+ | grep       | Prune a tree to preserve only the tips with that match a pattern. |
+ | sample     | Subsample the tree using various methods.                         |
+ | tips       | Print the tree tip labels.                                        |
+ | tipsed     | Search and replace patterns in tip labels.                        |
 
 
 ## Installation
@@ -55,7 +53,6 @@ Commands:
   filter  An advanced tool for performaing actions (remove, color, sample,...
   grep    Prune a tree to preserve only the tips with that match a pattern.
   sample  Subsample the tree using various methods.
-  stat    Display statistics for an input tree
   tips    Print the tree tip labels.
   tipsed  Search and replace patterns in tip labels.
 ```
@@ -133,4 +130,3 @@ smot sample prop --proportion=0.1 --min-tips=2 --factor-by-capture="(human|swine
 # image D
 smot sample para --proportion=0.1 --min-tips=2 --factor-by-capture="(human|swine)" --keep="swine" --seed=42 pdm.tre > pdm-para.tre
 ```
-

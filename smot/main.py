@@ -20,8 +20,9 @@ import smot.format as sf
 
 INT_SENTINEL = 9999
 
+
 def make_epilog(example):
-  return f"For subcommand usage, append `-h` (e.g., {example} -h)"
+    return f"For subcommand usage, append `-h` (e.g., {example} -h)"
 
 
 class MaybeStringType(click.ParamType):
@@ -709,7 +710,7 @@ def filter_cmd(
     tree: TextIO,
 ) -> None:
     """
-    An advanced tool for performaing actions (remove, color, sample, or
+    An advanced tool for performing actions (remove, color, sample, or
     replace) on monophyletic groups that meet specified conditions (all-match,
     some-match, etc).
     """
@@ -803,18 +804,33 @@ def filter_cmd(
 
 
 @click.command()
-@click.option("-p", "--pattern", nargs=2, multiple=True)
+@click.option(
+    "-p",
+    "--pattern",
+    nargs=2,
+    multiple=True,
+    help="This option takes two arguments: 1) a pattern to match against the taxa labels and 2) the hexadecimal color that will be assigned to the taxa label. The option may be used many times.",
+)
 @click.option(
     "-P", "--perl", is_flag=True, help="Interpret the pattern as a regular expression"
 )
 @dec_tree
 def leaf(pattern: List[Tuple[str, str]], perl: bool, tree: TextIO) -> None:
     """
-    Color the tips on a tree.
+    Color the taxa labels on a tree.
 
-    Output is always in nexus format.
+    Tips are colored based on exact or regex matches against taxon labels.
+    Multiple patterns may be colored with one command by chaining `-p` options.
+    The tips are colored in the order that the `-p` options are specified, so
+    previously colored labels may be recolored by subsequent commands.
 
-    smot color -p "swine" "#FFA500" -p "2020-" "#00FF00" my.tre > color.tre
+    The output file is always in nexus format.
+
+    Examples:
+
+      smot color leaf -p swine "#FFA500" -p "2020-" "#00FF00" my.tre
+
+      smot color leaf --perl -p "202[012]-..-..$" "#00FF00" my.tre
     """
     import smot.algorithm as alg
     import re
@@ -1066,7 +1082,11 @@ def push_color(tree: TextIO):
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
-@click.group(help="Simple Manipulation Of Trees", context_settings=CONTEXT_SETTINGS, epilog=make_epilog("smot sample"))
+@click.group(
+    help="Simple Manipulation Of Trees",
+    context_settings=CONTEXT_SETTINGS,
+    epilog=make_epilog("smot color"),
+)
 @click.version_option(__version__, "-v", "--version", message=__version__)
 def cli():
     pass
@@ -1111,15 +1131,27 @@ branch.add_command(para_color_cmd)
 @click.group(context_settings=CONTEXT_SETTINGS, epilog=make_epilog("smot color branch"))
 def color():
     """
-    Color the tips or branches. The coloring options are highly opinionated.
-    Leaf colors are based on patterns inferred from leaf labels. They are
-    generally independent of the leaf context within the tree. There is no
-    direct way to color leafs by clade (and I don't think there should be).
-    Group coloring should be done at the branch color level. Branch coloring
-    is explicitly phylogenetic - you may color branches that monophyletic or
-    paraphyletic for a given factor. There is no simple way to color a
-    particular branch (and why would you want to do that anyway). So, follow
-    my tree coloring dogma and everything will be fine.
+    Color the tips or branches.
+
+    The coloring philosophy in smot is to encode information about the specific
+    taxon in the taxon label color and to encode data about groups of taxa in
+    the branch color.
+
+    If you want to color tips by phylogenetic group, you may first color by
+    branch and then push the colors to the tips:
+
+      smot color branch mono --factor-by-field 1 -c colormap foo.tre |
+        smot push
+
+    This will identify all monophyletic groups based on the clade name found in
+    the first position of the taxon label (e.g., `>primate|...`. The
+    monophyletic branches are colored based a color map, which should have an
+    entry such as `primate #00FF00`. Then `smot push` takes colors in the nodes
+    and pushes them to their children, thus pushing the parent node colors to
+    the taxon labels.
+
+    Conversely, taxon label colors can be pulled up into parent nodes using
+    `smot color pull`.
     """
     pass
 

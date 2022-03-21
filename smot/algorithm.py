@@ -589,9 +589,7 @@ def sampleParaphyletic(
         node=node_, sampler=_sampler, selected=set(), paraGroup=set(), paraFactor=None
     )
 
-    def _cull(
-        node: Node[F, LC, Counter, BL]
-    ) -> List[Node[F, LC, Counter, BL]]:
+    def _cull(node: Node[F, LC, Counter, BL]) -> List[Node[F, LC, Counter, BL]]:
         chosenOnes = [
             kid
             for kid in node.kids
@@ -855,9 +853,7 @@ def colorMono(
 def filterMono(
     node: Node[F, LC, Counter, BL],
     condition: Callable[[Node[F, LC, Counter, BL]], bool],
-    action: Callable[
-        [Node[F, LC, Counter, BL]], Optional[Node[F, LC, Counter, BL]]
-    ],
+    action: Callable[[Node[F, LC, Counter, BL]], Optional[Node[F, LC, Counter, BL]]],
 ) -> Optional[Node[F, LC, Counter, BL]]:
     maybe_node: Optional[Node[F, LC, Counter, BL]]
     if len(node.data.factorCount) == 1:
