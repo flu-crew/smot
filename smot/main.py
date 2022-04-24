@@ -311,6 +311,10 @@ def equal(
     the depth of the tree, but is not representative of the tree's breadth.
     That is, if N=6 and a tree splits into two subtrees, one with 3 tips and
     one with 300 tips, still 3 tips will be sampled from each branch.
+
+    Example:
+
+      smot sample equal --factor-by-capture="(1B[^|]*)" --max-tips=5 1B.tre
     """
 
     import smot.algorithm as alg
@@ -361,9 +365,31 @@ def mono(
     tree: TextIO,
 ) -> None:
     """
-    Proportional sampling. Randomly sample p (0 to 1, from --proportion) tips
-    from each monophyletic (relative to factors) subtree. Retain at least N
-    tips in each branch (--min-tips).
+    Monophyletic sampling. Randomly sample --proportion of the tips (0 to 1)
+    from each monophyletic subtree. Retain at least --min-tips tips in each
+    branch.
+
+    The branches that are subsampled are monophyletic with respect to a string
+    (such as a clade name) that is identified by --factor-by-field,
+    --factor-by-table, or --factor-by-capture.
+
+    Examples:
+      \b
+      # downsample to the max of 10% or 3 taxa from each clade in a 1B influenza tree 
+      smot sample mono --factor-by-capture="(1B\.[^|]*)" -p 0.1 --min-tips=3 1B.tre
+
+      \b
+      # downsample each branch to the cube root (good when some clades are extremely large).
+      smot sample mono --factor-by-capture="(1B\.[^|]*)" -s 3 --min-tips=3 1B.tre
+
+      \b
+      # downsample each branch to a random 3 members or fewer members
+      smot sample mono --factor-by-capture="(1B\.[^|]*)" -s 3 1B.tre
+
+      \b
+      # downsample 1B tree but keep taxa with the pattern "202.-..-.." (taxa
+      # from the 20s) in their labels or the factor "1B.1.1". 
+      smot sample mono --factor-by-capture="(1B\.[^|]*)" -p 0.1 -r "202.-..-" -k "1B.1.2" --min-tips=3 1B.tre
     """
 
     import smot.algorithm as alg
@@ -433,6 +459,20 @@ def para(
     different factor than the stored subtrees, then we stop and sample from all
     tips in the stored trees and initialize a new list with the new
     monophyletic child.
+
+    Example:
+      \b
+      # Sample 10% of the members in each paraphyletic human or swine grouping
+      smot sample para --factor-by-capture="(swine|human)" -p 0.1 --min-tips=5 pdm.tre
+
+      \b
+      # Sample the square root of the number of members in each paraphyletic
+      # human or swine grouping
+      smot sample para --factor-by-capture="(swine|human)" -s 2 --min-tips=5 pdm.tre
+
+      \b
+      # Sample 3 of the members in each paraphyletic human or swine grouping
+      smot sample para --factor-by-capture="(swine|human)" -n 3 pdm.tre
     """
 
     import smot.algorithm as alg
@@ -492,7 +532,11 @@ def factor(
     example, for inferring clades given a few references in a tree. There are
     three modes: 'table' prints a TAB-delimited table of tip names and factors,
     'prepend' adds the factor to the beginning of the tiplabel (delimited with
-    '|'), 'append' adds it to the end.
+    '|'), and 'append' adds it to the end.
+
+    For example, to create a table of 1B clades: 
+
+      smot factor table --factor-by-capture "(1B[^|]*)" 1B.tre
     """
 
     import smot.algorithm as alg
@@ -712,7 +756,21 @@ def filter_cmd(
     """
     An advanced tool for performing actions (remove, color, sample, or
     replace) on monophyletic groups that meet specified conditions (all-match,
-    some-match, etc).
+    some-match, longer-than, etc).
+
+    Examples:
+
+      \b
+      # Color any monophyletic swine branches with at least one 2021 representative red
+      smot filter --factor-by-capture="(swine|human)" --all-match="swine" --some-match="2021" --color="#FF0000" pdm.tre
+
+      \b
+      # Remove any singleton swine clade
+      smot filter --factor-by-capture="(swine|human)" --smaller-than=2 --remove pdm.tre
+
+      \b
+      # Downsample any monophyletic group with more than 100 members
+      smot filter --factor-by-capture="(1B[^|]*)" --larger-than=10 --sample=0.1 1B.tre
     """
     import smot.algorithm as alg
     import re
@@ -949,7 +1007,29 @@ def mono_color_cmd(**kwargs):
     """
     Color a tree by monophyletic factor.
 
-    smot color branch mono --factor-by-capture="(1B\.[^|]*)" 1B.tre
+    For example, if we wanted to color the clades in the file 1B.tre (from
+    smot/test-data in the package repo), we would need to give smot a pattern
+    for extracting clade names from taxon labels. We can do this via regex
+    capture as shown below, where we define a clade name as a string beginning
+    with "1B." and continuing until the '|' delimiter is reached or the label
+    ends:
+
+      smot color branch mono --factor-by-capture="(1B\.[^|]*)" 1B.tre
+
+    This will create a Nexus file with the 1B clade branches given default
+    colors. If instead you want to define your own colors, you can provide a
+    color map table as a two-column TAB-separated file. For example:
+
+      \b
+      1B.2.2.1 #dfc27d
+      1B.2.2.2 #f6e8c3
+      1B.2.1   #c7eae5
+
+    Saving this under "1B-colors.tab", we can use these custom colors as follows:
+
+      smot color branch mono --factor-by-capture="(1B\.[^|]*)" --colormap=1B-colors.tab 1B.tre
+
+    Any factors/clades not included in the colormap will default to black.
     """
     colorBranches(is_para=False, **kwargs)
 
@@ -962,7 +1042,25 @@ def para_color_cmd(**kwargs):
     """
     Color a tree by paraphyletic factor.
 
-    smot color branch para --factor-by-capture="(1B.[^|]*)" 1B.tre
+    For example, we could color the swine and human clades in the influenza
+    2009 pandemic clade as follows (using a file from smot/test-data folder in
+    the smot package repo):
+
+      smot color branch para --factor-by-capture="(swine|human)" pdm.tre
+
+    This will create a Nexus file with human and swine branches given default
+    colors. If instead you want to define your own colors, you can provide a
+    color map table as a two-column TAB-separated file. For example:
+
+      \b
+      human #090909
+      swine #FF1000
+
+    Saving this under "pdm-colors.tab", we can use these custom colors as follows:
+
+      smot color branch para --factor-by-capture="(swine|human)" --colormap=pdm-colors.tab pdm.tre
+
+    Any factors/clades not included in the colormap will default to black.
     """
     colorBranches(is_para=True, **kwargs)
 
@@ -1119,7 +1217,7 @@ def branch():
     """
     Color the branches of a tree. You may provide a color map; if you do not,
     smot will automatically map factors to colors from a color-blind friendly
-    palette.
+    palette. See the mono and para help sections for examples.
     """
     pass
 
@@ -1131,27 +1229,33 @@ branch.add_command(para_color_cmd)
 @click.group(context_settings=CONTEXT_SETTINGS, epilog=make_epilog("smot color branch"))
 def color():
     """
-    Color the tips or branches.
+    Color the leafs or branches.
 
     The coloring philosophy in smot is to encode information about the specific
     taxon in the taxon label color and to encode data about groups of taxa in
     the branch color.
 
-    If you want to color tips by phylogenetic group, you may first color by
-    branch and then push the colors to the tips:
+    If you want to color leafs by phylogenetic group, you may first color by
+    branch and then push the colors to the leafs:
 
-      smot color branch mono --factor-by-field 1 -c colormap foo.tre |
-        smot push
+      smot color branch mono --factor-by-field 1 -c colormap foo.tre | smot push
 
     This will identify all monophyletic groups based on the clade name found in
-    the first position of the taxon label (e.g., `>primate|...`. The
+    the first position of the taxon label (e.g., ">primate|..."). The
     monophyletic branches are colored based a color map, which should have an
-    entry such as `primate #00FF00`. Then `smot push` takes colors in the nodes
-    and pushes them to their children, thus pushing the parent node colors to
-    the taxon labels.
+    entry such as `primate #00FF00`. Then `smot push` takes colors in nodes and
+    pushes them recursively to their children, ultimately pushing the colors
+    down to the taxon labels.
 
     Conversely, taxon label colors can be pulled up into parent nodes using
     `smot color pull`.
+
+    Any colored branches or leafs that are not overwritten by an operation keep
+    there original colors. Thus color commands can be chained together. If you
+    want to start with no color, first call `smot color rm` to remove all color
+    from the file.
+
+    Smot only supports color in Nexus format.
     """
     pass
 
