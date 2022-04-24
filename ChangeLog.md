@@ -1,3 +1,10 @@
+0.17.4 [2022-04-24]
+===================
+
+ * Improve internal documentation and include examples
+ * Fix dependency handling in setup
+ * Remove stub `smot stat` command
+
 0.17.3 [2022-01-11]
 ===================
  
