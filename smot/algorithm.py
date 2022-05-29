@@ -279,13 +279,13 @@ def factorByField(node: AnyNode, field: int, sep: str = "|") -> AnyNode:
         if name is None:
             return None
         else:
+            fields = name.split(sep)
             try:
-                return name.split(sep)[field - 1]
+                return fields[field - 1]
             except IndexError:
-                # raised when there are too few fields
-                raise IndexError(
-                    f"Cannot access the {field}th field in tip label {name}"
-                )
+                # if there are not enough fields in this taxon,
+                # leave the taxon unlabeled
+                return None
 
     return factorByLabel(node, _fun)
 

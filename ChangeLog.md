@@ -1,3 +1,10 @@
+
+0.17.5 [2022-05-29]
+===================
+
+ * For --factor-by-field, if there are too few fields in a taxon name, leave
+   the taxon unlabeled, rather than raise an error
+
 0.17.4 [2022-04-24]
 ===================
 
