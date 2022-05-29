@@ -281,7 +281,7 @@ dec_patristic = click.option(
 )
 
 
-@click.command()
+@click.command(name="equal")
 @factoring
 @dec_keep
 @dec_default
@@ -289,7 +289,7 @@ dec_patristic = click.option(
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_newick
 @dec_tree
-def equal(
+def sample_equal_cmd(
     factor_by_capture: Optional[str],
     factor_by_field: Optional[int],
     factor_by_table: Optional[str],
@@ -301,16 +301,17 @@ def equal(
     tree: TextIO,
 ) -> None:
     """
-    Equal sampling. Descend from root to tip. At each node, determine if each
-    subtree contains a single factor. If a subtree is not monophyletic, recurse
-    into the subtree. If the subtree is monophyletic, then select up to N tips
-    (from the --max-tips argument) from the subtree. The selection of tips is
-    deterministic but dependent on the ordering of leaves. To sample a subtree,
-    an equal number of tips is sampled from each descendent subtree, and so on
-    recursively down to the tips. The resulting downsampled subtree captures
-    the depth of the tree, but is not representative of the tree's breadth.
-    That is, if N=6 and a tree splits into two subtrees, one with 3 tips and
-    one with 300 tips, still 3 tips will be sampled from each branch.
+
+    Equal sampling. Descend from root to tip. At each node, determine if all
+    descends have the same factor (is monophyletic). If the tree is not
+    monophyletic, recurse into each subtree. If the tree is monophyletic, then
+    sample N taxa from the tree.
+
+    To sample N taxa from a tree with k immediate subtrees, divide N as evenly
+    as possible into k groups. If a given subtree has fewer taxa than are
+    alloted to it, then keep all taxa in the subtree and divide the remainder
+    among its siblings. This partitioning is dependent on the ordering of the
+    tree, so for reproducibility the tree should be sorted before sampling.
 
     Example:
 
@@ -327,7 +328,7 @@ def equal(
         factor_by_table=factor_by_table,
         default=default,
     )
-    tree_obj.tree = alg.sampleBalanced(tree_obj.tree, keep=keep, maxTips=max_tips)
+    tree_obj.tree = alg.sampleEqual(tree_obj.tree, keep=keep, maxTips=max_tips)
 
     if newick:
         print(sf.newick(tree_obj))
@@ -335,7 +336,7 @@ def equal(
         print(sf.nexus(tree_obj))
 
 
-@click.command()
+@click.command(name="mono")
 @factoring
 @dec_keep
 @dec_keep_regex
@@ -348,7 +349,7 @@ def equal(
 @dec_newick
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_tree
-def mono(
+def sample_mono_cmd(
     factor_by_capture: Optional[str],
     factor_by_field: Optional[int],
     factor_by_table: Optional[str],
@@ -369,9 +370,12 @@ def mono(
     from each monophyletic subtree. Retain at least --min-tips tips in each
     branch.
 
-    The branches that are subsampled are monophyletic with respect to a string
-    (such as a clade name) that is identified by --factor-by-field,
-    --factor-by-table, or --factor-by-capture.
+    Monophyletic subtrees are identified by walking from root to tip and
+    checking at each node whether all descendents have the same label (or no
+    label).
+
+    There is no requirement that each monophyletic subtree have a distinct
+    label. Therefore, polyphyletic cases are also handled by this algorithm.
 
     Examples:
       \b
@@ -422,7 +426,7 @@ def mono(
         print(sf.nexus(tree_obj))
 
 
-@click.command()
+@click.command(name="para")
 @factoring
 @dec_keep
 @dec_keep_regex
@@ -435,7 +439,7 @@ def mono(
 @dec_newick
 @click.option("--zero", is_flag=True, help="Set branches without lengths to 0")
 @dec_tree
-def para(
+def sample_para_cmd(
     factor_by_capture: Optional[str],
     factor_by_field: Optional[int],
     factor_by_table: Optional[str],
@@ -754,8 +758,10 @@ def filter_cmd(
     tree: TextIO,
 ) -> None:
     """
-    An advanced tool for performing actions (remove, color, sample, or
-    replace) on monophyletic groups that meet specified conditions (all-match,
+    Subset or modify taxa by group.
+
+    `smot filter` performs flexible actions (remove, color, sample, or replace)
+    on monophyletic groups that meet specified conditions (all-match,
     some-match, longer-than, etc).
 
     Examples:
@@ -1193,23 +1199,44 @@ def cli():
 @click.group(context_settings=CONTEXT_SETTINGS, epilog=make_epilog("smot sample para"))
 def sample():
     """
-    Subsample the tree using various methods. The details of the sampling
-    algorithms differ, but they all start by adding 0 or 1 labels (or factors)
-    to each tip in the tree. These factors are assigned in 1 of 3 ways,
-    described in the --factor-by-capture, --factor-by-field, and
-    --factor-by-table options. Once the factors have been determined, we ascend
-    from tip to root recording the set of all descendent factors in each node.
-    Thus the ancestral node of a monophyletic subtree, where all leaves have
-    the same factor (or no factor), will store a set of exactly one factor. The
-    resulting factored tree is the starting data structure for each of the
-    sampling algorithms.
+    Subsample the tree. There are three subsampling algorithms: equal, mono and
+    para. For details on each see the specific subcommand help statements.
+    
+    Each of the algorithms begins by assigning labels to the taxa. These labels
+    may be extracted from the taxon names using a regular expressions
+    (--factor-by-capture), the index of a field given a delimiter
+    (--factor-by-field), or by looking up the taxon name in an external table
+    (--factor-by-table). Some (often most) of the taxa may be unlabeled.
+
+    Once a subset of the taxa are labeled, each algorithm will partition the
+    tree into sampling groups. Taxa will then be selected from each group and
+    the tree will be pruned to the selection.
+
+    The following three examples show three ways of labeling taxa:
+
+      \b
+      smot sample mono --factor-by-field=6 -p 0.25 1B.tre
+      smot sample mono --factor-by-table 1B.tab -p 0.25  1B.tre
+      smot sample mono --factor-by-capture "\|(1B\.[^|]*)" -p 0.25 1B.tre
+
+    The files 1B.tre and 1B.tab are available in the test-data/ folder in the
+    smot GitHub repo.
+
+    Taxon names have formats such as:
+
+      CVV|A/Michigan/383/2018|H1N2|human|USA|1B.2.1|2018-07-31
+
+    The --factor-by-field=6 option selects the 6th field (1B.2.1 in this
+    case), --factor-by-table looks up the entire string in the TAB-delimited
+    table 1B.tab, and --factor-by-capture regular expression finds the label
+    grouped in the parentheses.
     """
     pass
 
 
-sample.add_command(equal)
-sample.add_command(mono)
-sample.add_command(para)
+sample.add_command(sample_equal_cmd)
+sample.add_command(sample_mono_cmd)
+sample.add_command(sample_para_cmd)
 
 
 @click.group(epilog=make_epilog("smot color branch mono"))

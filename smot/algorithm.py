@@ -548,11 +548,11 @@ def distribute(count: int, groups: int, sizes: Optional[List[int]] = None) -> Li
     return selection
 
 
-def sampleBalanced(
+def sampleEqual(
     node: AnyNode, keep: List[str] = [], maxTips: int = 5
 ) -> Node[F, int, Counter, BL]:
     # recursive sampler
-    def _sampleBalanced(node):
+    def _sampleEqual(node):
         newkids = []
         for kid in node.kids:
             if (
@@ -564,13 +564,13 @@ def sampleBalanced(
                 else:
                     newkids.append(_sampleN(kid, maxTips))
             else:
-                newkids.append(_sampleBalanced(kid))
+                newkids.append(_sampleEqual(kid))
         node.kids = newkids
         return node
 
     node = setNLeafs(node)
     node = setFactorCounts(node)
-    return clean(_sampleBalanced(node))
+    return clean(_sampleEqual(node))
 
 
 def sampleParaphyletic(

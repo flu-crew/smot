@@ -401,9 +401,9 @@ class TestALgorithms(unittest.TestCase):
             alg.getLeftmost(sp.p_tree.parse("(B,(A,C,E),D);").tree), makeNode(label="B")
         )
 
-    def test_sampleBalanced(self):
+    def test_sampleEqual(self):
         self.assertEqual(
-            alg.sampleBalanced(
+            alg.sampleEqual(
                 alg.factorByField(
                     sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, field=2
                 ),
@@ -420,7 +420,7 @@ class TestALgorithms(unittest.TestCase):
         )
 
         self.assertEqual(
-            alg.sampleBalanced(
+            alg.sampleEqual(
                 alg.factorByField(
                     sp.p_tree.parse("(B|a,(A|b,C|b,E|b),D|c);").tree, field=2
                 ),
