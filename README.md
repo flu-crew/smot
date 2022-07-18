@@ -3,35 +3,19 @@
 
 # smot - Simple Manipulation Of Trees
 
-`smot` is a command line tool for sampling and manipulating phylogenetic
-trees.
-
-
- | subcommand | description                                                       |
- | ---------- | ----------------------------------------------------------------- |
- | color      | Color the tips or branches.                                       |
- | factor     | Impute, annotate with, and/or tabulate factors.                   |
- | filter     | An advanced tool for performing actions (remove, color,...        |
- | grep       | Prune a tree to preserve only the tips with that match a pattern. |
- | sample     | Subsample the tree using various methods.                         |
- | tips       | Print the tree tip labels.                                        |
- | tipsed     | Search and replace patterns in tip labels.                        |
+`smot` is a command line tool for sampling and manipulating phylogenetic trees.
 
 
 ## Installation
+
+`smot` is available through PyPi and dependes on Python 3.7. In can be installed as follows:
+
 
 ``` sh
 pip install smot
 ```
 
-## Requirements
-
-Python modules:
- * biopython
- * parsec
- * docopt
-
-Python v3.6 and later (required for string interpolation)
+It may be necessary to replace `pip` with `pip3`.
 
 ## Documentation
 
@@ -48,13 +32,15 @@ Options:
   -h, --help     Show this message and exit.
 
 Commands:
-  color   Color the tips or branches.
+  color   Color the leafs or branches.
   factor  Impute, annotate with, and/or tabulate factors.
-  filter  An advanced tool for performaing actions (remove, color, sample,...
+  filter  An advanced tool for performing actions (remove, color, sample,...
   grep    Prune a tree to preserve only the tips with that match a pattern.
   sample  Subsample the tree using various methods.
   tips    Print the tree tip labels.
   tipsed  Search and replace patterns in tip labels.
+
+  For subcommand usage, append `-h` (e.g., smot color -h)
 ```
 
 Detailed information can then be requested for the specific subcommand:
@@ -66,7 +52,7 @@ Usage: smot grep [OPTIONS] PATTERN [TREE]
   Prune a tree to preserve only the tips with that match a pattern.
 
 Options:
-  -v, --invert-match  Keep all leafs NOT matching the pattern
+  -v, --invert-match  Keep all leaves NOT matching the pattern
   -P, --perl          Interpret the pattern as a regular expression
   -f, --file          Read patterns from a file instead of a set string
   --newick            Write output in simple newick format (tip colors and
@@ -83,6 +69,10 @@ $ smot sample -h
 $ smot sample para -h 
 ```
 
+## Tree formats
+
+Input is Newick or Nexus format and output is Nexus unless a `--newick` flag is
+set. Choosing Newick output will lose any color metadata.
 
 ## Examples
 
