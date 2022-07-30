@@ -58,7 +58,7 @@ The utility of `smot` is explained by the following three cases. For
 subsampling, `smot` may process a phylogenetic tree that has labeled clades:
 taxa from each clade may be subsampled while maintaining a set number of taxa
 from each clade and also retaining provided reference taxa. Alternatively, the
-number of strains within a clade may be scaled as $n_{sampled}=n^{1/r}$, where
+number of taxa within a clade may be scaled as $n_{sampled}=n^{1/r}$, where
 $n$ is the original number of taxa in the clade and $r$ is a user provided scaling
 factor.  For classification, `smot` can process a partially labeled tree by
 inferring missing labels and prepending them to the taxa names. For filtering,
@@ -78,20 +78,19 @@ computationally expensive operations. Programs such as Treemmer
 [@menardo2018treemmer], TreeTrimmer [@maruyama2013treetrimmer], and Treeshrink
 [@mai2018treeshrink] approach the general problem of statistical subsampling
 while preserving specific diversity metrics of the original inferred
-phylogenetic tree. In contrast, `smot` is designed to subsample taxa in the tree
-while preserving objective metadata and annotations that are independent of
-tree topology.
+phylogenetic tree. In contrast, `smot` is designed to subsample from groups
+within trees while preserving desired references.
 
-The second purpose of `smot` is classification and annotation of unlabeled taxa
-and clades when provided representative strain classifications. Classification
-is achieved by either patristic distance or monophyletic grouping, and the
-method is based on submitted reference taxa rather than inferring clusters from
-the tree and then naming them. Inferring clusters de novo can be accomplished
-with tools such as phyCLIP [@han2019phyclip] or DYNAMITE
-[@magalis2021dynamite].  Alternatively, taxa may be classified into clades
-using a fixed reference scaffold tree; this is done for influenza A virus in
-swine by `octoFLU` [@chang2019octoflu]. `smot` depends on reference taxa, like
-`octoFLU`, but it extracts them from the taxa names or tables of attributes.
+The second purpose of `smot` is classification where unlabeled taxa in a tree
+are classified using a subset of labeled taxa. This is achieved by either
+patristic distance or monophyletic grouping. The method is based on
+submitted reference taxa rather than inferring clusters from the tree and then
+naming them. Inferring clusters de novo can be accomplished with tools such as
+phyCLIP [@han2019phyclip] or DYNAMITE [@magalis2021dynamite].  Alternatively,
+taxa may be classified into clades using a fixed reference scaffold tree; this
+is done for influenza A virus in swine by `octoFLU` [@chang2019octoflu]. `smot`
+depends on reference taxa, like `octoFLU`, but it extracts them from the taxa
+names or tables of attributes.
 
 The third purpose of `smot` is filtering and coloring a tree based upon user
 queries. `smot` does not have more specialized phylogenetic and visualization
@@ -118,15 +117,15 @@ A common theme across `smot`'s algorithms is to group tips and then perform an
 action on each group. All grouping algorithms require labels on some or all of
 the tips. Labels may be assigned to tips using: entries provided in a table;
 input field index given a text separator in taxa names; or through application
-of regular expressions on taxa names to extract labels of interest. Given these
-initial labels, the tree can be grouped using a patristic, monophyletic, or
-paraphyletic algorithm. The patristic algorithm groups all tips together under
-the label of the nearest labeled tip by cumulative branch distance on the tree.
-The monophyletic algorithm descends from root to tip (trees are assumed to be
-rooted). When a subtree with one or more tips share a common label, and all
-other tips are unlabeled, the subtree is yielded as one monophyletic group. The
-paraphyletic algorithm also descends from root to tip, but rather than setting
-a monophyletic subtree to a group, it merges adjacent monophyletic groups with
+of regular expressions captures over taxa names. Given these initial labels,
+the tree can be grouped using a patristic, monophyletic, or paraphyletic
+algorithm. The patristic algorithm groups all tips together under the label of
+the nearest labeled tip by branch distance on the tree. The monophyletic
+algorithm descends from root to tip (trees are assumed to be rooted). When a
+subtree with one or more tips share a common label, and all other tips are
+unlabeled, the subtree is yielded as one monophyletic group. The paraphyletic
+algorithm also descends from root to tip, but rather than setting a
+monophyletic subtree to a group, it merges adjacent monophyletic groups with
 the same label down the tree. When a node is reached that is monophyletic for
 the two subtrees with different labels, each subtree is set as a group,
 ensuring that the branch nearest to a group border is sampled from.
@@ -135,31 +134,33 @@ ensuring that the branch nearest to a group border is sampled from.
 
 Once a tree is partitioned into groups, it may be subsampled, classified, or
 filtered. Subsampling takes each partition and randomly selects either a set
-proportion of the tips (with an optional minimum tips) or a scaled proportion
-where the number of sampled tips equals $n^{1/r}$, where $n$ is the number of tips
-in the group and $r$ is the root (e.g., 2 for square root). Classifying either
-propagates the group label to all unlabeled members or assigns each unlabeled
-tip the label of the nearest labeled tip using a patristic classifier.
-Filtering performs an operation on each group under some condition, for
-example, it may delete all groups that have fewer than $n$ members.
+proportion of the tips (with an optional minimum tips) or a proportion that
+scales with group size. For scaled sampling, the number of sampled taxa equals
+$n^{1/r}$, where $n$ is the number of tips in the group and $r$ is the root
+(e.g., 2 for square root). Classifying either propagates the group label to all
+unlabeled members or assigns each unlabeled tip the label of the nearest
+labeled tip using a patristic classifier. Filtering performs an operation on
+each group under some condition, for example, it may delete all groups that
+have fewer than $n$ members.
 
 
 # Case Study: Inferring human-to-swine influenza A virus transmission events
 
-In 2009, an influenza A virus emerged in swine, was transmitted to humans and
-subsequently caused the first pandemic of the 21st century [@smith2009origins]. This
-H1N1 lineage (H1N1pdm09) became endemic in humans and is regularly reintroduced
-to swine populations globally [@vijaykrishna2010reassortment; @nelson2015continual].
-Phylogenetically, human-to-swine introductions can be detected based upon tree
-topology: an isolated swine-derived HA gene nested within a monophyletic group
-of human genes indicates interspecies transmission [@volz2013viral]. A similar tree
-structure can be used to infer zoonotic transmission from swine to humans
-[@nelson2015continual]. To illustrate the shared evolutionary history of the H1N1pdm09
-lineage, we inferred phylogenetic trees based on the hemagglutinin (HA) gene
-collected from only swine (**Figure 1A**) and from swine and human sequences
-together (**Figure 1B**). In both cases, the scope of data required to infer host
-origin and interspecies transmission events obscured visualization and the
-ability to infer the directionality of the transmission events.
+In 2009, an influenza A virus emerged in swine and was transmitted to humans
+causing the first pandemic of the 21st century [@smith2009origins]. This H1N1
+lineage (H1N1pdm09) became endemic in humans and is regularly reintroduced to
+swine populations globally [@vijaykrishna2010reassortment;
+@nelson2015continual].  Phylogenetically, human-to-swine introductions can be
+detected based upon tree topology: an isolated swine-derived hemagglutinin (HA)
+gene nested within a monophyletic group of human genes indicates interspecies
+transmission [@volz2013viral]. A similar tree structure can be used to infer
+zoonotic transmission from swine to humans [@nelson2015continual]. To
+illustrate the shared evolutionary history of the H1N1pdm09 lineage, we
+inferred phylogenetic trees based on the HA genes collected from only swine
+(**Figure 1A**) and from swine and human sequences together (**Figure 1B**). In
+both cases, the size of the tree required to infer host origin and interspecies
+transmission events obscured visualization and the ability to infer the
+directionality of the transmission events.
 
 The goal of this case study was to identify subsequent swine-to-swine
 transmission of H1N1pdm09 that descended from unique human-to-swine spillovers.
