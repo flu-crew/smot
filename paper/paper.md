@@ -128,9 +128,11 @@ algorithm also descends from root to tip, but rather than setting a
 monophyletic subtree to a group, it merges adjacent monophyletic groups with
 the same label down the tree. When a node is reached that is monophyletic for
 the two subtrees with different labels, each subtree is set as a group,
-ensuring that the branch nearest to a group border is sampled from.
+ensuring that the branch nearest to a group border is sampled from. See **Figure
+1** for an simple example of the difference between the monophyletic and
+paraphyletic grouping algorithms.
 
-![Interspecies transmission and evolution of the 2009 H1N1 influenza A virus pandemic (H1N1pdm09) lineage in swine and humans. (A) An inferred phylogenetic tree of influenza A virus (IAV) in swine hemagglutinin (HA) genes from the H1N1pdm09 lineage collected between 2015 and 2021. There are too many swine strains in the tree to read the labels even omitting the human influenza A virus H1N1 HA sequences necessary to capture the correct evolutionary context of the lineage. (B) An inferred phylogenetic tree of H1N1pdm09 lineage HA genes from humans and swine (26,802 genes, human in black, swine in orange). The tree is too large to see individual labels, and critical human-to-swine evolutionary linkage is obscured. To identify the evolutionary history of this IAV lineage, we include all swine HA genes to demonstrate onward transmission of the virus, and human HA genes to detect directionality of interspecies transmission. (C) An application of `smot`: human HA genes were down-sampled while keeping all swine genes. This ensured the context of human HA genes, allowing identification of human-to-swine spillovers and visualization of swine-to-swine transmission of the H1N1pdm09 lineage. All swine clades present in (B) are present in (C). (D) Using this approach, we identified a human-to-swine event (arrow) that seeded onward transmission in swine, followed by a single human HA gene nested within a monophyletic swine group (triangle) (blue rectangle in (C) and enlarged in the inset (D)). The human HA gene demonstrates a zoonotic (swine-to-human) transmission event. Subsampling human HA genes before building the tree or without considering context would likely obscure these two-way interspecies transmission events.\label{fig:f1}](img/fig1.png)
+![The monophyletic and paraphyletic algorithms differ in how they group the clades that will be downsampled (or otherwise acted upon). The paraphyletic algorithm groups adjacent monophyletic subtrees down the trunk but preserves the deepest monophyletic tree to guarantee that the nearest relative to a change in label is preserved.\label{fig:fig1}](img/fig1.png)
 
 Once a tree is partitioned into groups, it may be subsampled, classified, or
 filtered. Subsampling takes each partition and randomly selects either a set
@@ -143,6 +145,7 @@ labeled tip using a patristic classifier. Filtering performs an operation on
 each group under some condition, for example, it may delete all groups that
 have fewer than $n$ members.
 
+![Interspecies transmission and evolution of the 2009 H1N1 influenza A virus pandemic (H1N1pdm09) lineage in swine and humans. (A) An inferred phylogenetic tree of influenza A virus (IAV) in swine hemagglutinin (HA) genes from the H1N1pdm09 lineage collected between 2015 and 2021. There are too many swine strains in the tree to read the labels even omitting the human influenza A virus H1N1 HA sequences necessary to capture the correct evolutionary context of the lineage. (B) An inferred phylogenetic tree of H1N1pdm09 lineage HA genes from humans and swine (26,802 genes, human in black, swine in orange). The tree is too large to see individual labels, and critical human-to-swine evolutionary linkage is obscured. To identify the evolutionary history of this IAV lineage, we include all swine HA genes to demonstrate onward transmission of the virus, and human HA genes to detect directionality of interspecies transmission. (C) An application of `smot`: human HA genes were down-sampled while keeping all swine genes. This ensured the context of human HA genes, allowing identification of human-to-swine spillovers and visualization of swine-to-swine transmission of the H1N1pdm09 lineage. All swine clades present in (B) are present in (C). (D) Using this approach, we identified a human-to-swine event (arrow) that seeded onward transmission in swine, followed by a single human HA gene nested within a monophyletic swine group (triangle) (blue rectangle in (C) and enlarged in the inset (D)). The human HA gene demonstrates a zoonotic (swine-to-human) transmission event. Subsampling human HA genes before building the tree or without considering context would likely obscure these two-way interspecies transmission events.\label{fig:f2}](img/fig2.png)
 
 # Case Study: Inferring human-to-swine influenza A virus transmission events
 
@@ -157,7 +160,7 @@ transmission [@volz2013viral]. A similar tree structure can be used to infer
 zoonotic transmission from swine to humans [@nelson2015continual]. To
 illustrate the shared evolutionary history of the H1N1pdm09 lineage, we
 inferred phylogenetic trees based on the HA genes collected from only swine
-(**Figure 1A**) and from swine and human sequences together (**Figure 1B**). In
+(**Figure 2A**) and from swine and human sequences together (**Figure 2B**). In
 both cases, the size of the tree required to infer host origin and interspecies
 transmission events obscured visualization and the ability to infer the
 directionality of the transmission events.
@@ -176,24 +179,24 @@ subsampled large human clades; removed swine taxa with no recently observed
 representatives; and removed swine clades that had no evidence of
 swine-to-swine transmission (i.e., clades with a single representative).
 
-![Cleaning and subsampling to extract the . The `smot`-processed phylogenetic tree can be used to identify human-to-swine spillover and sustained transmission of the 2009 H1N1 influenza A virus pandemic (H1N1pdm09) lineage in swine. (A) The original phylogenetic tree with human and swine H1N1pdm09 HA genes (n=26802) collected between 2009 and 2021. (B) The tree after filtering to keep only the swine clades that had more than one member and at least one 2021 representative. (C-E) The trees after subsampling with the (C) equal, (D) mono, and (E) para algorithms, respectively. Tip labels colored in orange represent swine hosts and orange branch coloring represents clades where all hosts are swine; blue tip labels are swine HA genes collected in 2021; each swine subtree represents an independent H1N1pdm09 clade circulating in US swine derived from a unique human-to-swine spillover event.  The `smot` pipeline that produced the trees (C-E) was written in Bash and documentation and explanation of the code is provided in the GitHub README (https://github.com/flu-crew/smot) or the Flu Crew documentation page (https://flu-crew.github.io/docs/).\label{fig:f2}](img/fig2.png)
+![Cleaning and subsampling to extract the . The `smot`-processed phylogenetic tree can be used to identify human-to-swine spillover and sustained transmission of the 2009 H1N1 influenza A virus pandemic (H1N1pdm09) lineage in swine. (A) The original phylogenetic tree with human and swine H1N1pdm09 HA genes (n=26802) collected between 2009 and 2021. (B) The tree after filtering to keep only the swine clades that had more than one member and at least one 2021 representative. (C-E) The trees after subsampling with the (C) equal, (D) mono, and (E) para algorithms, respectively. Tip labels colored in orange represent swine hosts and orange branch coloring represents clades where all hosts are swine; blue tip labels are swine HA genes collected in 2021; each swine subtree represents an independent H1N1pdm09 clade circulating in US swine derived from a unique human-to-swine spillover event.  The `smot` pipeline that produced the trees (C-E) was written in Bash and documentation and explanation of the code is provided in the GitHub README (https://github.com/flu-crew/smot) or the Flu Crew documentation page (https://flu-crew.github.io/docs/).\label{fig:f3}](img/fig3.png)
 
-This process was achieved with a series of `smot` commands (**Figure 2**).
+This process was achieved with a series of `smot` commands (**Figure 3**).
 First, `smot` extracted clades where all taxa labels where annotated with
 either the term "human" or "swine". We then removed all monophyletic swine
 clades without a detection in 2021 and all swine clades with a single member
 (i.e., isolated spillovers without evidence of sustained transmission). The
 resultant tree contained all human HA genes and swine HA genes for strains with
-evidence of contemporary circulation (**Figure 2B**): this tree was then
-subsampled with the three `smot` algorithms (**Figure 2C-E**). In **Figure
-2C**, we sampled 1 tip from each monophyletic human clade and generated a tree
+evidence of contemporary circulation (**Figure 3B**): this tree was then
+subsampled with the three `smot` algorithms (**Figure 3C-E**). In **Figure
+3C**, we sampled 1 tip from each monophyletic human clade and generated a tree
 that demonstrated unique human and swine monophyletic clades. A similar
-presentation was generated in **Figure 2D** where the algorithm randomly
+presentation was generated in **Figure 3D** where the algorithm randomly
 selected $n^{1/4}$ tips from each monophyletic human clade, where $n$ is the
 number of tips in the original clade, keeping a minimum of 1 tip. The third
-algorithm (**Figure 2E**) sampled paraphyletically, allowing human branches
+algorithm (**Figure 3E**) sampled paraphyletically, allowing human branches
 across the backbone to be jointly subsampled, allowing greater compression of
-the tree and more tractable visualization. The final tree (**Figure 2E**)
+the tree and more tractable visualization. The final tree (**Figure 3E**)
 demonstrated seven independent H1N1pdm09 human-to-swine spillover events with
 evidence of persistent swine-to-swine transmission Importantly, the tree was
 sufficiently compressed for labels to be readable on a single page while still
