@@ -892,9 +892,9 @@ def leaf(pattern: List[Tuple[str, str]], perl: bool, tree: TextIO) -> None:
 
     Examples:
 
-      smot color leaf -p swine "#FFA500" -p "2020-" "#00FF00" my.tre
+      smot color leaf -p swine "#FFA500" -p "2020-" "#00FF00" 1B.tre
 
-      smot color leaf --perl -p "202[012]-..-..$" "#00FF00" my.tre
+      smot color leaf --perl -p "202[012]-..-..$" "#00FF00" 1B.tre
     """
     import smot.algorithm as alg
     import re
@@ -1265,12 +1265,12 @@ def color():
     If you want to color leafs by phylogenetic group, you may first color by
     branch and then push the colors to the leafs:
 
-      smot color branch mono --factor-by-field 1 -c colormap foo.tre | smot push
+      smot color branch mono --factor-by-field 1 -c 1B-colors.tab 1B.tre | smot color push
 
     This will identify all monophyletic groups based on the clade name found in
     the first position of the taxon label (e.g., ">primate|..."). The
     monophyletic branches are colored based a color map, which should have an
-    entry such as `primate #00FF00`. Then `smot push` takes colors in nodes and
+    entry such as `primate #00FF00`. Then `smot color push` takes colors in nodes and
     pushes them recursively to their children, ultimately pushing the colors
     down to the taxon labels.
 

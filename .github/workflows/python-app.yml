@@ -38,4 +38,4 @@ jobs:
     - name: Typechecking
       run: mypy --python-version 3.10 smot/*py
     - name: Golden tests
-      run: cd test-data && make
+      run: cd test-data && make && ./test-examples.sh
