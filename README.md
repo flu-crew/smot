@@ -99,7 +99,15 @@ smot sample para select-swine.tre --scale=4 --factor-by-capture="(swine|human)" 
   --min-tips=3 --keep="swine" --seed=42 > select-swine-para-sample.tre
 ```
 
-Line 1 filters out all leaves with hosts other than swine or human. Line 2 removes all monophyletic swine clades that have no representative from 2021. Line 3 removes all swine clades represented by a single member. Line 4 removes any coloring in the input tree. Lines 5 colors all remaining swine clades orange (hexadecimal code “#FFA000”). Line 6 colors leaves gray by default, then colors swine orange and finally recent swine blue. Lines 8-9, 10-11, and 14-15 downsamples the human representatives using the equal, mono, and para algorithms, respectively. This script is based on smot v0.14.2, the API may change in the future.
+Line 1 filters out all leaves with hosts other than swine or human. Line 2
+removes all monophyletic swine clades that have no representative from 2021.
+Line 3 removes all swine clades represented by a single member. Line 4 removes
+any coloring in the input tree. Lines 5 colors all remaining swine clades
+orange (hexadecimal code “#FFA000”). Line 6 colors leaves gray by default, then
+colors swine orange and finally recent swine blue. Lines 8-9, 10-11, and 14-15
+downsamples the human representatives using the equal, mono, and para
+algorithms, respectively. This script is based on smot v0.14.2, the API may
+change in the future.
 
 ![](images/pdm-0.png)
 
@@ -129,9 +137,8 @@ repo.
 
 ### `smot grep` - prune a tree to preserve only the taxa matching a pattern
 
-Create a subtree where all taxa are from the year 2020.The '-..-..' pattern is
-a regular expression that matches the MONTH-DAY syntax in a date and prevents
-most unwanted matches.
+Create a subtree where all taxa are from the year 2020.The `-..-..` pattern is
+a regular expression that matches the MONTH-DAY syntax in a date.
 
 ```
 smot grep --perl '2020-..-..' 1B.tre
@@ -144,7 +151,7 @@ and coloring. These factors can be specified in one of several ways.
 
  * `--factor-by-capture` uses a regular expression capture group to set the factor
  * `--factor-by-field` uses the index of a delimited field in the taxon label
- * `--factor-by-table` uses an two-column, TAB-delimited table that maps taxon name to factor
+ * `--factor-by-table` uses a two-column, TAB-delimited table that maps taxon name to factor
 
 The `smot factor` subcommand can list the extracted factors in a table:
 
@@ -163,8 +170,9 @@ taxon name (`smot factor append` and `smot factor prepend`, respectively).
 
 `smot` offers three general sampling algorithms.
 
- * The `equal` sampling method samples an equal number of taxa from each branch
-   descending from each node if sufficient taxa are available in each branch.
+ * The `equal` sampling method recursively samples an equal number of taxa from
+   each subtree descending from each node. If a subtree does contains too few
+   taxa, the remainder will be distributed to the sister subtrees.
 
  * The monophyletic sampling method (`mono`) subsamples a branch of the tree if
    all taxa within the branch have the same factor.
@@ -173,33 +181,34 @@ taxon name (`smot factor append` and `smot factor prepend`, respectively).
    monophyletic to be sampled together. The algorithm guarantees that at least
    one taxa is sampled from the deepest branch neighboring a different group.
 
-
-The following three commands all do the same thing (25% sampling from each of the 1B flu clades) using different factoring methods:
+The following three commands use the `mono` algorithm to sample 25% of the taxa
+from each of the 1B flu clades. They differ only in how the factor (the strain
+clade) is specified:
 
 ```
-smot sample mono --factor-by-field=6 -p 0.25 1B.tre
-smot sample mono --factor-by-table 1B.tab -p 0.25 1B.tre
-smot sample mono --factor-by-capture "\|(1B\.[^|]*)" -p 0.25 1B.tre
+smot sample mono --seed=24601 --factor-by-field=6 -p 0.25 1B.tre
+smot sample mono --seed=24601 --factor-by-table 1B.tab -p 0.25 1B.tre
+smot sample mono --seed=24601 --factor-by-capture "\|(1B\.[^|]*)" -p 0.25 1B.tre
 ```
 
-For reproducibility, you can specify the random seed (e.g., `--seed=24601`).
+The `--seed` allows the random seed to be set for reproducibility.
 
 It may be useful to prevent certain taxa from being downsampled. For example
 reference taxa or taxa that are from a particular time or region of interest.
 This can be achieved with the `-k/--keep` and `--r/--keep-regex` options which
 prevents downsampling of specific factors or taxa with labels matching a given
 regular expression. In the example below, a tree is downsampled by clade
-(`1B.*`) but all taxa from the 20s and all taxa from the specific clade
+(`1B.*`) but all taxa from the 2020s and all taxa from the specific clade
 "1B.1.2" are preserved:
 
 ```
 smot sample mono --factor-by-capture="(1B\.[^|]*)" -p 0.1 -r "202.-..-" -k "1B.1.2" --min-tips=3 1B.tre
 ```
 
-Rather taking a set percentage of representatives in each sampling group, the
-downsampling percentage can scale with the size of the group. Given a group of
-size `n`, we can downsample to size `ceiling(n^(1/r))`, where `r` is the root
-specified by the `-s/--scale` option. This rescales a tree and is useful when
+Rather than taking a set percentage of representatives in each sampling group,
+the sample percentage can vary with the size of the group. Given a group of
+size `n`, we can downsample the group to a size of `ceiling(n^(1/r))`, where
+`r` is the root specified by the `-s/--scale` option. This is useful when
 over-represented clades obscure the features of interest.
 
 ```
@@ -212,10 +221,10 @@ The final sampling method is to randomly sample a set number of taxa from each g
 smot sample mono --factor-by-capture="(1B\.[^|]*)" -n 3 --min-tips=3 1B.tre
 ```
 
-The `para` algorithm is useful for sampling features that are not always passed
-from parent to child. Examples include traits that may be lost, geographical
-location of the sample, or the host species of a pathogen. The examples below
-sample flu strains from a tree with frequent interspecies jumps.
+The `para` algorithm is useful for sampling features that may not be inherited
+by the child. Examples include variable phenotypes, geographical location, or
+pathogen host. The examples below sample flu strains from a tree with frequent
+interspecies jumps.
 
 ```
 smot sample para --factor-by-capture="(swine|human)" -p 0.1 --min-tips=5 pdm.tre
@@ -225,12 +234,15 @@ smot sample para --factor-by-capture="(swine|human)" -n 3 pdm.tre
 
 ### `smot color` - color taxa labels or branches
 
-Taxa labels may be colored by specifying a pattern that a label must contain
-and the color matching labels will be given. For example, coloring every taxa
-label orange ("#FFA500" in hex) that has the word "swine" and ever label that
-was from year 2020 green can be done as follows: 
+Taxa labels may be colored by specifying a pattern and the color matching
+labels will be given. For example, coloring every taxa orange ("#FFA500" in
+hex) that has the word "swine" and every label that was from year 2020 green
+can be done as follows: 
 
 smot color leaf -p swine "#FFA500" -p "2020-" "#00FF00" 1B.tre
+
+Note that multiple patterns may be specified in one command and that latter
+matches overwrite the color of prior matches.
 
 Insted of matching fixed patterns, regular expressions may be matched instead
 using the `--perl` argument:
@@ -262,7 +274,9 @@ smot color branch para --factor-by-capture="(swine|human)" --colormap=pdm-colors
 If you want to color taxa labels by branch, or color lower branches the same
 color as the parent branch, you can pass the tree into `smot color push`:
 
+```
 smot color branch mono --factor-by-field 1 -c 1B-colors.tab 1B.tre | smot color push
+```
 
 ### `smot filter` - subset or modify taxa by group
 
