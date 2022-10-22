@@ -651,7 +651,7 @@ def grep(
     pattern: str, tree: TextIO, invert_match: bool, perl: bool, newick: bool, file: bool
 ):
     """
-    Prune a tree to preserve only the tips with that match a pattern.
+    Prune a tree to preserve only the tips that match a pattern.
     """
 
     import smot.algorithm as alg
