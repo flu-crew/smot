@@ -120,11 +120,14 @@ have only a single representative, and (C-E) subsample tree B using the
 
 ![](images/pdm-1.png)
 
+Here the input tree A is subsampled using three different subsampling algorithms
+to produce the trees B, C, and D.
+
 ``` sh
 # image B
-smot sample equal --factor-by-capture="(human|swine)" --keep="swine" --seed=42 --max-tips=2 pdm.tre > pdm-equal.tre
+smot sample equal --factor-by-capture="(human|swine)" --keep="swine" --max-tips=2 pdm.tre > pdm-equal.tre
 # image C
-smot sample prop --proportion=0.1 --min-tips=2 --factor-by-capture="(human|swine)" --keep="swine" --seed=42 pdm.tre > pdm-prop.tre
+smot sample mono --proportion=0.1 --min-tips=2 --factor-by-capture="(human|swine)" --keep="swine" --seed=42 pdm.tre > pdm-prop.tre
 # image D
 smot sample para --proportion=0.1 --min-tips=2 --factor-by-capture="(human|swine)" --keep="swine" --seed=42 pdm.tre > pdm-para.tre
 ```
