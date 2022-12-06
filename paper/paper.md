@@ -203,6 +203,7 @@ sufficiently compressed for labels to be readable on a single page while still
 providing the human context HA genes needed to resolve the seven unique
 human-to-swine spillover events.
 
+\scriptsize
 ```sh
 smot grep -v "(swine|human)" pdm.tre |
     smot filter --factor-by-capture="(swine|human)" --all-match="swine" --none-match="2021-" --remove |
