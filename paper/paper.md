@@ -203,7 +203,23 @@ sufficiently compressed for labels to be readable on a single page while still
 providing the human context HA genes needed to resolve the seven unique
 human-to-swine spillover events.
 
+```sh
+smot grep -v "(swine|human)" pdm.tre |
+    smot filter --factor-by-capture="(swine|human)" --all-match="swine" --none-match="2021-" --remove |
+    smot filter --factor-by-capture="(swine|human)" --all-match="swine" --smaller-than 2 --remove |
+    smot color rm |
+    smot filter --factor-by-capture="(swine|human)" --all-match="swine" --color="#FFA000" |
+    smot color leaf -P -p "." "#909090" -p "swine" "#FFA000" -p "swine.*2021-" "#0000FF" > select-swine.tre
 
+smot sample equal select-swine.tre --factor-by-capture="(swine|human)" \
+  --max-tips=1 --keep="swine" > select-swine-equal-sample.tre
+
+smot sample mono select-swine.tre --scale=4 --factor-by-capture="(swine|human)" \
+  --min-tips=1 --keep="swine" --seed=42 > select-swine-mono-sample.tre
+
+smot sample para select-swine.tre --scale=4 --factor-by-capture="(swine|human)" \
+  --min-tips=3 --keep="swine" --seed=42 > select-swine-para-sample.tre
+```
 
 # Availability
 
