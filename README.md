@@ -242,7 +242,9 @@ labels will be given. For example, coloring every taxa orange ("#FFA500" in
 hex) that has the word "swine" and every label that was from year 2020 green
 can be done as follows: 
 
+``` sh
 smot color leaf -p swine "#FFA500" -p "2020-" "#00FF00" 1B.tre
+```
 
 Note that multiple patterns may be specified in one command and that latter
 matches overwrite the color of prior matches.
@@ -250,7 +252,9 @@ matches overwrite the color of prior matches.
 Insted of matching fixed patterns, regular expressions may be matched instead
 using the `--perl` argument:
 
+``` sh
 smot color leaf --perl -p "202[012]-..-..$" "#00FF00" 1B.tre
+```
 
 For coloring branches, the same `--factor-by-*` options as were seen in the
 `smot sample` examples may be used. `smot` will automatically generate colors
