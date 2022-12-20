@@ -115,8 +115,8 @@ offers a scalable foundation for building algorithms that work on large trees
 
 A common theme across `smot`'s algorithms is to group tips and then perform an
 action on each group. All grouping algorithms require labels on some or all of
-the tips. Labels may be assigned to tips using: entries provided in a table;
-input field index given a text separator in taxa names; or through application
+the tips. Labels may be assigned to tips using entries provided in a table,
+input field index given a text separator in taxa names, or through application
 of regular expressions captures over taxa names. Given these initial labels,
 the tree can be grouped using a patristic, monophyletic, or paraphyletic
 algorithm. The patristic algorithm groups all tips together under the label of
@@ -179,7 +179,7 @@ subsampled large human clades; removed swine taxa with no recently observed
 representatives; and removed swine clades that had no evidence of
 swine-to-swine transmission (i.e., clades with a single representative).
 
-![Cleaning and subsampling to extract the . The `smot`-processed phylogenetic tree can be used to identify human-to-swine spillover and sustained transmission of the 2009 H1N1 influenza A virus pandemic (H1N1pdm09) lineage in swine. (A) The original phylogenetic tree with human and swine H1N1pdm09 HA genes (n=26802) collected between 2009 and 2021. (B) The tree after filtering to keep only the swine clades that had more than one member and at least one 2021 representative. (C-E) The trees after subsampling with the (C) equal, (D) mono, and (E) para algorithms, respectively. Tip labels colored in orange represent swine hosts and orange branch coloring represents clades where all hosts are swine; blue tip labels are swine HA genes collected in 2021; each swine subtree represents an independent H1N1pdm09 clade circulating in US swine derived from a unique human-to-swine spillover event.  The `smot` pipeline that produced the trees (C-E) was written in Bash and documentation and explanation of the code is provided in the GitHub README (https://github.com/flu-crew/smot) or the Flu Crew documentation page (https://flu-crew.github.io/docs/).\label{fig:f3}](img/fig3.png)
+![Cleaning and subsampling to extract the . The `smot`-processed phylogenetic tree can be used to identify human-to-swine spillover and sustained transmission of the 2009 H1N1 influenza A virus pandemic (H1N1pdm09) lineage in swine. (A) The original phylogenetic tree with human and swine H1N1pdm09 HA genes (n=26802) collected between 2009 and 2021. (B) The tree after filtering to keep only the swine clades that had more than one member and at least one 2021 representative. (C-E) The trees after subsampling with the (C) equal, (D) mono, and (E) para algorithms, respectively. Tip labels colored in orange represent swine hosts and orange branch coloring represents clades where all hosts are swine; blue tip labels are swine HA genes collected in 2021; each swine subtree represents an independent H1N1pdm09 clade circulating in US swine derived from a unique human-to-swine spillover event.  The `smot` pipeline that produced the trees (C-E) was written in Bash and documentation and explanation of the code is provided in the GitHub README (<https://github.com/flu-crew/smot>) or the Flu Crew documentation page (<https://flu-crew.github.io/docs/>).\label{fig:f3}](img/fig3.png)
 
 This process was achieved with a series of `smot` commands (**Figure 3**).
 First, `smot` extracted clades where all taxa labels where annotated with
@@ -221,13 +221,14 @@ smot sample mono select-swine.tre --scale=4 --factor-by-capture="(swine|human)" 
 smot sample para select-swine.tre --scale=4 --factor-by-capture="(swine|human)" \
   --min-tips=3 --keep="swine" --seed=42 > select-swine-para-sample.tre
 ```
+\normalsize
 
 # Availability
 
-`smot` is available on PyPi and the source is hosted on GitHub at https://github.com/flu-crew/smot. Additional documentation is available in the Flu Crew documentation page (https://flu-crew.github.io/docs/).
+`smot` is available on PyPi and the source is hosted on GitHub at <https://github.com/flu-crew/smot>. Additional documentation is available in the Flu Crew documentation page (<https://flu-crew.github.io/docs/>).
 
 # Acknowledgements
 
-We gratefully acknowledge pork producers, swine veterinarians, and laboratories for participating in the USDA Influenza A Virus in Swine Surveillance System and publicly sharing sequences. This work was supported in part by: the U.S. Department of Agriculture (USDA) Agricultural Research Service [ARS project number 5030-32000-231-000-D]; the U.S. Department of Agriculture (USDA) Animal and Plant Health Inspection Service [ARS project number 5030-32000-231-080-I]; the National Institute of Allergy and Infectious Diseases, National Institutes of Health, Department of Health and Human Services [contract number 75N93021C00015]; the USDA Agricultural Research Service Research Participation Program of the Oak Ridge Institute for Science and Education (ORISE) through an interagency agreement between the U.S. Department of Energy (DOE) and the USDA Agricultural Research Service [contract number DE-AC05- 06OR23100]; and the SCINet project of the USDA Agricultural Research Service [ARS project number 0500-00093-001-00-D]. The funders had no role in study design, data collection and interpretation, or the decision to submit the work for publication. Mention of trade names or commercial products in this article is solely for the purpose of providing specific information and does not imply recommendation or endorsement by the USDA, DOE, or ORISE. USDA is an equal opportunity provider and employer.
+We gratefully acknowledge pork producers, swine veterinarians, and laboratories for participating in the USDA Influenza A Virus in Swine Surveillance System and publicly sharing sequences. This work was supported in part by: the U.S. Department of Agriculture (USDA) Agricultural Research Service (ARS project number 5030-32000-231-000-D); the U.S. Department of Agriculture (USDA) Animal and Plant Health Inspection Service (ARS project number 5030-32000-231-080-I); the National Institute of Allergy and Infectious Diseases, National Institutes of Health, Department of Health and Human Services (contract number 75N93021C00015); the USDA Agricultural Research Service Research Participation Program of the Oak Ridge Institute for Science and Education (ORISE) through an interagency agreement between the U.S. Department of Energy (DOE) and the USDA Agricultural Research Service (contract number DE-AC05- 06OR23100); and the SCINet project of the USDA Agricultural Research Service (ARS project number 0500-00093-001-00-D). The funders had no role in study design, data collection and interpretation, or the decision to submit the work for publication. Mention of trade names or commercial products in this article is solely for the purpose of providing specific information and does not imply recommendation or endorsement by the USDA, DOE, or ORISE. USDA is an equal opportunity provider and employer.
 
 # References
