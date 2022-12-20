@@ -9,7 +9,7 @@ authors:
   - name: Zebulun W. Arendsee
     orcid: 0000-0002-5833-798X
     affiliation: 1
-  - name: Amy L. Vincent
+  - name: Amy L. Vincent Baker
     orcid: 0000-0002-4953-7285
     affiliation: 1
   - name: Tavis K. Anderson^[corresponding author]
