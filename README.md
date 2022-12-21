@@ -1,4 +1,5 @@
 ![build status](https://github.com/flu-crew/smot/actions/workflows/python-app.yml/badge.svg)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.04193/status.svg)](https://doi.org/10.21105/joss.04193)
 ![PyPI](https://img.shields.io/pypi/v/smot.svg)
 
 # smot - Simple Manipulation Of Trees
