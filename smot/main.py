@@ -660,7 +660,10 @@ def grep(
     if file:
         with open(pattern, "r") as f:
             patterns = [p.strip() for p in f.readlines()]
-            matcher = lambda s: any([p in s for p in patterns])
+            if invert_match:
+                matcher = lambda s: not any([p in s for p in patterns])
+            else:
+                matcher = lambda s: any([p in s for p in patterns])
     elif perl:
         regex = re.compile(pattern)
         if invert_match:
